@@ -1,0 +1,25 @@
+{
+  "name": "hide-and-seek",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev:web": "npm run dev -w @hideseek/web",
+    "dev:server": "npm run dev -w @hideseek/server",
+    "build:web": "npm run build -w @hideseek/web",
+    "build:server": "npm run build -w @hideseek/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test:sql && npm run test --workspaces --if-present",
+    "test:sql": "node supabase/tests/rpc.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15"
+  }
+}

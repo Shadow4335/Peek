@@ -1,0 +1,41 @@
+# Render Blueprint — authoritative game server (apps/server).
+# Deploy: Render dashboard → New → Blueprint → pick this repo. Secrets marked `sync: false`
+# are prompted for on first deploy.
+services:
+  - type: web
+    name: hideseek-server
+    runtime: node
+    # Game state (timers, pending tag requests) lives in memory: keep exactly ONE instance and
+    # avoid the free plan, which spins down when idle and would kill running matches.
+    plan: starter
+    numInstances: 1
+    region: oregon
+    rootDir: .
+    # NODE_ENV=production would make `npm ci` skip devDependencies (tsup), so include them.
+    buildCommand: npm ci --include=dev --workspace @hideseek/server --include-workspace-root && npm run build -w @hideseek/server
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /healthz
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: SWEEP_INTERVAL_MS
+        value: "5000"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # e.g. https://hideseek.vercel.app,https://*.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
