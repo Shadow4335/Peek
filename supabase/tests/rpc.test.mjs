@@ -173,6 +173,29 @@ ok(gone.length === 0, "last player leaving deletes the room");
 await expectErr(null, `select leave_room($1)`, [R], "NOT_AUTHENTICATED", "leave requires auth");
 await expectErr(U.b, `select leave_room($1)`, [R], "ROOM_NOT_IN_LOBBY", "cannot leave a started match");
 
+// 0003: rename + rematch
+const [r3] = await as(U.host, `select * from create_room('Host', 5, 1, 30, 60, 60, 120, $1::jsonb, $2::jsonb, 40000)`,
+  [JSON.stringify(fence), JSON.stringify(buffered)]);
+await as(U.b, `select * from join_room($1, 'Bea')`, [r3.code]);
+const [renamed] = await as(U.b, `select * from set_display_name($1, '  Sneaky Otter ')`, [r3.id]);
+ok(renamed.display_name === "Sneaky Otter", "set_display_name trims and renames in LOBBY");
+await expectErr(U.d, `select * from set_display_name($1, 'X')`, [r3.id], "NOT_IN_ROOM", "rename requires membership");
+await expectErr(U.b, `select create_rematch($1)`, [r3.id], "ROOM_NOT_ENDED", "rematch only after the match");
+await as("service", `select * from transition_room_status($1, 'LOBBY', 'ENDED')`, [r3.id]);
+await expectErr(U.b, `select * from set_display_name($1, 'Y')`, [r3.id], "ROOM_NOT_IN_LOBBY", "no renaming after the lobby");
+await expectErr(U.d, `select create_rematch($1)`, [r3.id], "NOT_IN_ROOM", "rematch requires membership");
+const [{ create_rematch: code1 }] = await as(U.b, `select create_rematch($1)`, [r3.id]);
+const [{ create_rematch: code2 }] = await as(U.host, `select create_rematch($1)`, [r3.id]);
+ok(/^[A-Z2-9]{6}$/.test(code1) && code1 === code2, "create_rematch is idempotent (first caller wins)", code1);
+const [newRoom] = await as("service", `select * from rooms where code = $1`, [code1]);
+const [oldRoom] = await as("service", `select * from rooms where id = $1`, [r3.id]);
+ok(newRoom.status === "LOBBY" && newRoom.host_user_id === U.b && newRoom.max_players === 5 &&
+   JSON.stringify(newRoom.geofence) === JSON.stringify(oldRoom.geofence), "rematch copies zone + rules; caller hosts");
+const [oldSeen] = await as(U.host, `select rematch_code from rooms where id = $1`, [r3.id]);
+ok(oldSeen.rematch_code === code1, "old room publishes rematch_code to members");
+const [hostOfNew] = await as("service", `select display_name, is_host from players where room_id = $1`, [newRoom.id]);
+ok(hostOfNew.display_name === "Sneaky Otter" && hostOfNew.is_host, "rematch host keeps their name");
+
 // Math sanity
 const [hv] = await as(U.b, `select haversine_m(40,-74,40.001,-74) as d`);
 ok(Math.abs(hv.d - 111.195) < 0.01, `haversine 0.001° lat ≈ 111.195 m (${hv.d.toFixed(3)})`);

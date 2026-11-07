@@ -7,13 +7,10 @@ import { MatchScreen } from "@/components/match/MatchScreen";
 import { useGameSocket } from "@/lib/socket";
 import { ErrorNotice } from "@/components/ui/Notice";
 import { useRoom } from "@/lib/useRoom";
-import { NamePrompt } from "./NamePrompt";
 
 export function RoomScreen({ code }: { code: string }) {
   const r = useRoom(code);
   const { socket } = useGameSocket();
-
-  if (r.phase === "needs-name") return <NamePrompt code={code} onSubmit={r.submitName} />;
 
   if (r.phase === "error" || r.phase === "left") {
     return (
@@ -49,9 +46,10 @@ export function RoomScreen({ code }: { code: string }) {
         setReady={r.setReady}
         start={r.start}
         leave={r.leave}
+        rename={r.rename}
       />
     );
   }
 
-  return <MatchScreen room={r.room} me={r.me} players={r.players} socket={socket} refresh={r.refresh} />;
+  return <MatchScreen room={r.room} me={r.me} players={r.players} socket={socket} refresh={r.refresh} onRematch={r.rematch} />;
 }

@@ -3,11 +3,11 @@
 import { RULE_BOUNDS, type RoomRules } from "@hideseek/shared";
 import {
   ArrowLeft,
-  ChevronRight,
   Circle as CircleIcon,
   Crosshair,
   Hexagon,
   LocateFixed,
+  Settings2,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -59,19 +59,18 @@ export default function GeofenceBuilder() {
   const { fix, status: geoStatus } = useGeolocation(true);
 
   const [name] = useState(loadName);
-  const [mode, setMode] = useState<Mode>("polygon");
+  // Quick circle centred on you is a valid zone with zero taps; polygon is opt-in.
+  const [mode, setMode] = useState<Mode>("circle");
   const [step, setStep] = useState<Step>("draw");
   const [vertices, setVertices] = useState<LngLat[]>([]);
-  const [center, setCenter] = useState<LngLat | null>(null);
+  const [pickedCenter, setCenter] = useState<LngLat | null>(null);
   const [radiusM, setRadiusM] = useState<number>(CIRCLE_RADIUS.default);
   const [rules, setRules] = useState<RoomRules>(DEFAULT_RULES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Name comes from the landing page.
-  useEffect(() => {
-    if (!name.trim()) router.replace("/");
-  }, [name, router]);
+  // Until the host picks a spot, the circle follows their first GPS fix.
+  const center = useMemo<LngLat | null>(() => pickedCenter ?? (fix ? [fix.lng, fix.lat] : null), [pickedCenter, fix]);
 
   // --- Derived geometry -------------------------------------------------------
   const geometry = useMemo(
@@ -131,7 +130,7 @@ export default function GeofenceBuilder() {
   useEffect(() => {
     if (!map || !fix || jumpedRef.current) return;
     jumpedRef.current = true;
-    map.jumpTo({ center: [fix.lng, fix.lat], zoom: 16 });
+    map.jumpTo({ center: [fix.lng, fix.lat], zoom: 15.5 }); // default 250 m circle fits above the sheet
   }, [map, fix]);
 
   // User location dot.
@@ -219,7 +218,7 @@ export default function GeofenceBuilder() {
   const switchMode = (next: Mode) => {
     setMode(next);
     setError(null);
-    if (next === "circle" && !center && map) {
+    if (next === "circle" && !pickedCenter && !fix && map) {
       const c = map.getCenter();
       setCenter([c.lng, c.lat]);
     }
@@ -284,7 +283,7 @@ export default function GeofenceBuilder() {
           <ArrowLeft className="size-5" />
         </Link>
         <div className="rounded-full bg-black/80 px-4 py-2 text-sm font-semibold ring-1 ring-neutral-700 backdrop-blur">
-          {step === "draw" ? "Draw the play zone" : "Match rules"}
+          {step === "draw" ? "Set the play zone" : "Match settings"}
         </div>
         <button
           type="button"
@@ -337,7 +336,9 @@ export default function GeofenceBuilder() {
             <p className="text-sm text-neutral-400">
               {mode === "polygon"
                 ? "Tap the map to drop pins around the play area. Drag a pin to adjust it."
-                : "Tap the map (or drag the pin) to set the center, then size the circle."}
+                : center
+                  ? "Centred on you. Drag the pin or tap the map to move it, then size the circle."
+                  : "Waiting for your location — or tap the map to place the zone."}
             </p>
 
             <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -402,8 +403,24 @@ export default function GeofenceBuilder() {
               </p>
             ) : null}
 
-            <Button block disabled={!valid} onClick={() => setStep("rules")} icon={<ChevronRight className="size-5" />}>
-              Next: match rules
+            <button
+              type="button"
+              onClick={() => setStep("rules")}
+              data-testid="settings-summary"
+              className="flex min-h-12 items-center justify-between gap-2 rounded-2xl bg-neutral-900 px-4 text-left text-sm ring-1 ring-neutral-800"
+            >
+              <span className="flex items-center gap-2 text-neutral-300">
+                <Settings2 className="size-4 shrink-0" aria-hidden />
+                {rules.max_players} players · {rules.seeker_count} seeker{rules.seeker_count === 1 ? "" : "s"} ·{" "}
+                {formatDuration(rules.game_duration_mins * 60)} · {formatDuration(rules.head_start_secs)} head start
+              </span>
+              <span className="font-semibold text-hider">Edit</span>
+            </button>
+
+            <ErrorNotice>{error}</ErrorNotice>
+
+            <Button block onClick={submit} loading={submitting} disabled={!valid}>
+              Create room
             </Button>
           </>
         ) : (
@@ -467,7 +484,7 @@ export default function GeofenceBuilder() {
 
             <div className="grid grid-cols-[auto_1fr] gap-2">
               <Button variant="secondary" onClick={() => setStep("draw")} disabled={submitting}>
-                Back
+                Done
               </Button>
               <Button onClick={submit} loading={submitting} disabled={!valid}>
                 Create room

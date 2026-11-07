@@ -20,10 +20,11 @@ interface Props {
   refresh: () => void;
   /** Override for tests/fixtures; defaults to Supabase ping_snapshots. */
   loadPingHistory?: PingHistoryLoader;
+  onRematch?: () => Promise<{ code: string } | { error: string }>;
 }
 
 /** Routes HEAD_START / ACTIVE / ENDED to the right view for this player's role. */
-export function MatchScreen({ room, me, players, socket, refresh, loadPingHistory }: Props) {
+export function MatchScreen({ room, me, players, socket, refresh, loadPingHistory, onRematch }: Props) {
   const live = room.status === "HEAD_START" || room.status === "ACTIVE";
   const isHider = me?.role === "HIDER" && !me.caught_at;
   const isSeeker = me?.role === "SEEKER";
@@ -36,7 +37,7 @@ export function MatchScreen({ room, me, players, socket, refresh, loadPingHistor
   useSeekerBeacon(socket, room.status === "ACTIVE" && isSeeker, fix);
 
   if (room.status === "ENDED" || !me) {
-    return <MatchSummary room={room} players={players} me={me} loadPingHistory={loadPingHistory} />;
+    return <MatchSummary room={room} players={players} me={me} loadPingHistory={loadPingHistory} onRematch={me ? onRematch : undefined} />;
   }
 
   const props = { room, me, players, match, fix, now, wakeLockHeld: held };

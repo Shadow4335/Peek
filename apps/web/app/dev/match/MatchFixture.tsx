@@ -144,6 +144,7 @@ export function MatchFixture() {
     ended_at: status === "ENDED" ? iso(startedAt + 95_000 + 9 * 60_000) : null,
     winner: status === "ENDED" ? "SEEKERS" : null,
     ping_wave_count: wave,
+    rematch_code: null,
     created_at: iso(startedAt),
     updated_at: iso(startedAt),
   };
@@ -226,6 +227,10 @@ export function MatchFixture() {
         players={players}
         socket={socket as unknown as GameSocket}
         refresh={() => setPlayers((ps) => ps.map((p) => p))}
+        onRematch={async () => {
+          await new Promise((r) => setTimeout(r, 400));
+          return { error: "Rematch is simulated in the fixture (would open a new lobby)." };
+        }}
         loadPingHistory={async () => fakeHistory(startedAt + 95_000, players.filter((p) => p.role === "HIDER").map((p) => p.id))}
       />
       <CatchSync socket={socket} setPlayers={setPlayers} />

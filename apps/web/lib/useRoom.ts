@@ -3,13 +3,23 @@
 import type { PlayerRole, PlayerRow, RoomRow } from "@hideseek/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { friendlyError } from "./errors";
-import { loadName, saveName } from "./player";
-import { claimLobbyRole, fetchPlayers, fetchRoom, joinRoom, leaveRoom, setPlayerReady, startMatchRpc } from "./rpc";
+import { carryRoleInto, forgetRoom, loadName, rememberRoom, saveName, takeCarriedRole } from "./player";
+import {
+  claimLobbyRole,
+  createRematch,
+  fetchPlayers,
+  fetchRoom,
+  joinRoom,
+  leaveRoom,
+  setDisplayName,
+  setPlayerReady,
+  startMatchRpc,
+} from "./rpc";
 import type { TimedFix } from "./useGeolocation";
 import { useGameSocket } from "./socket";
 import { getSupabase } from "./supabase";
 
-export type RoomPhase = "loading" | "needs-name" | "ready" | "error" | "left";
+export type RoomPhase = "loading" | "ready" | "error" | "left";
 
 const POLL_MS = 10_000;
 
@@ -27,43 +37,36 @@ export function useRoom(code: string) {
   const [meId, setMeId] = useState<string | null>(null);
   const roomId = room?.id ?? null;
 
-  const enter = useCallback(
-    async (name: string) => {
-      setPhase("loading");
-      setError(null);
-      try {
-        const me = await joinRoom(code, name);
-        const [r, ps] = await Promise.all([fetchRoom(me.room_id), fetchPlayers(me.room_id)]);
-        if (!r) throw new Error("ROOM_NOT_FOUND");
-        setMeId(me.id);
-        setRoom(r);
-        setPlayers(ps);
-        setPhase("ready");
-      } catch (err) {
-        setError(friendlyError(err));
-        setPhase("error");
+  const enter = useCallback(async () => {
+    setPhase("loading");
+    setError(null);
+    try {
+      // Saved (or auto-generated) name — no name prompt in the way.
+      const me = await joinRoom(code, loadName());
+      rememberRoom(code);
+      // Coming from "Rematch": re-claim the side you played last time (best effort).
+      const carried = takeCarriedRole(code);
+      if (carried && carried !== "UNASSIGNED" && me.role === "UNASSIGNED") {
+        await claimLobbyRole(me.room_id, carried as PlayerRole).catch(() => undefined);
       }
-    },
-    [code],
-  );
+      const [r, ps] = await Promise.all([fetchRoom(me.room_id), fetchPlayers(me.room_id)]);
+      if (!r) throw new Error("ROOM_NOT_FOUND");
+      setMeId(me.id);
+      setRoom(r);
+      setPlayers(ps);
+      setPhase("ready");
+    } catch (err) {
+      setError(friendlyError(err));
+      setPhase("error");
+    }
+  }, [code]);
 
-  // Initial entry with the saved name (or ask for one).
   useEffect(() => {
-    const name = loadName().trim();
     const run = async () => {
-      if (!name) setPhase("needs-name");
-      else await enter(name);
+      await enter();
     };
     void run();
   }, [enter]);
-
-  const submitName = useCallback(
-    (name: string) => {
-      saveName(name);
-      void enter(name.trim());
-    },
-    [enter],
-  );
 
   // --- Live sync ----------------------------------------------------------------
   const refreshPlayers = useCallback(async () => {
@@ -188,6 +191,7 @@ export function useRoom(code: string) {
     if (!roomId) return null;
     try {
       await leaveRoom(roomId);
+      forgetRoom();
       setPhase("left");
       return null;
     } catch (err) {
@@ -197,10 +201,33 @@ export function useRoom(code: string) {
 
   const me = useMemo(() => players.find((p) => p.id === meId) ?? null, [players, meId]);
 
+  const rename = useCallback(
+    (name: string) =>
+      run(async () => {
+        if (!roomId) return;
+        await setDisplayName(roomId, name);
+        saveName(name);
+      }),
+    [run, roomId],
+  );
+
+  /** Creates (or reuses) the rematch lobby and returns its code; your side carries over. */
+  const existingRematch = room?.rematch_code ?? null;
+  const rematch = useCallback(async (): Promise<{ code: string } | { error: string }> => {
+    if (!roomId) return { error: "Room not loaded." };
+    try {
+      const next = existingRematch ?? (await createRematch(roomId));
+      if (me) carryRoleInto(next, me.role);
+      return { code: next };
+    } catch (err) {
+      return { error: friendlyError(err) };
+    }
+  }, [roomId, existingRematch, me]);
+
   const refresh = useCallback(() => {
     void refreshPlayers();
     void refreshRoom();
   }, [refreshPlayers, refreshRoom]);
 
-  return { phase, error, room, players, me, connected, submitName, claim, setReady, start, leave, refresh };
+  return { phase, error, room, players, me, connected, claim, setReady, start, leave, refresh, rename, rematch };
 }

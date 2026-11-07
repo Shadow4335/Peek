@@ -35,6 +35,8 @@ export interface RoomRow extends RoomRules {
   ended_at: string | null;
   winner: MatchWinner | null;
   ping_wave_count: number;
+  /** Set when someone starts a rematch from this (ENDED) room. */
+  rematch_code: string | null;
   created_at: string;
   updated_at: string;
 }

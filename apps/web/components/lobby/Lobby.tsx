@@ -1,17 +1,19 @@
 "use client";
 
 import type { PlayerRole, PlayerRow, RoomRow } from "@hideseek/shared";
-import { Check, Copy, LogOut, Play, Share2, Users, Wifi, WifiOff } from "lucide-react";
+import { Check, Copy, LogOut, Pencil, Play, QrCode, Share2, Users, Wifi, WifiOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorNotice } from "@/components/ui/Notice";
 import { formatDuration } from "@/components/ui/Slider";
 import { formatArea } from "@/lib/geofence";
+import { cleanName, NAME_MAX } from "@/lib/player";
 import { useGeolocation, type TimedFix } from "@/lib/useGeolocation";
 import { useReadyGuard } from "@/lib/useReadyGuard";
 import { assessZone } from "@/lib/zone";
 import { GpsBadge } from "./GpsBadge";
+import { InviteQr } from "./InviteQr";
 import { RosterColumn } from "./RosterColumn";
 
 const ZoneMiniMap = dynamic(() => import("./ZoneMiniMap"), {
@@ -30,9 +32,10 @@ interface LobbyProps {
   setReady: (ready: boolean, fix?: TimedFix | null) => ActionResult;
   start: (force: boolean) => ActionResult;
   leave: () => ActionResult;
+  rename: (name: string) => ActionResult;
 }
 
-export function Lobby({ room, players, me, connected, claim, setReady, start, leave }: LobbyProps) {
+export function Lobby({ room, players, me, connected, claim, setReady, start, leave, rename }: LobbyProps) {
   const { fix, status } = useGeolocation(true);
   const zone = assessZone(fix, status, room.geofence_buffered);
   useReadyGuard(me, zone, fix, setReady);
@@ -42,6 +45,22 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
   const [copied, setCopied] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [confirmForce, setConfirmForce] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const [editingName, setEditingName] = useState<string | null>(null);
+
+  /** Picking a side also readies you when your GPS already passes — one tap instead of two. */
+  const claimSide = (role: PlayerRole) =>
+    act(async () => {
+      const err = await claim(role);
+      if (err) return err;
+      return zone === "inside" && fix ? setReady(true, fix) : null;
+    });
+
+  const saveName = async () => {
+    const next = editingName?.trim();
+    setEditingName(null);
+    if (next && next !== me?.display_name) await act(() => rename(next));
+  };
 
   const act = async (fn: () => ActionResult) => {
     setBusy(true);
@@ -154,6 +173,14 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
               <Copy className="size-4 text-neutral-400" aria-label="Copy link" />
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => setShowQr(true)}
+            aria-label="Show invite QR code"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-neutral-950 text-neutral-300 ring-1 ring-neutral-800"
+          >
+            <QrCode className="size-5" />
+          </button>
           <span className="flex h-11 items-center gap-1 rounded-full bg-neutral-950 px-3 text-sm text-neutral-300 ring-1 ring-neutral-800">
             <Users className="size-4" aria-hidden />
             {players.length}/{room.max_players}
@@ -171,6 +198,37 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             {connected ? <Wifi className="size-3.5 text-hider" /> : <WifiOff className="size-3.5 text-warn" />}
           </span>
         </p>
+
+        {me ? (
+          editingName !== null ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveName();
+              }}
+              className="flex gap-2"
+            >
+              <input
+                autoFocus
+                aria-label="Your name"
+                maxLength={NAME_MAX}
+                value={editingName}
+                onChange={(e) => setEditingName(cleanName(e.target.value))}
+                onBlur={() => void saveName()}
+                className="h-11 min-w-0 flex-1 rounded-xl bg-neutral-900 px-3 ring-1 ring-inset ring-neutral-700 outline-none focus:ring-2 focus:ring-hider"
+              />
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(me.display_name)}
+              className="flex items-center gap-2 self-start text-sm text-neutral-400"
+            >
+              Playing as <span className="font-semibold text-white">{me.display_name}</span>
+              <Pencil className="size-3.5" aria-label="Edit name" />
+            </button>
+          )
+        ) : null}
 
         <GpsBadge zone={zone} accuracy={fix?.accuracy_m ?? null} />
         <ZoneMiniMap fence={room.geofence} buffered={room.geofence_buffered} fix={fix} inside={zone === "inside"} />
@@ -209,7 +267,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             meId={me?.id ?? null}
             myRole={myRole}
             busy={busy}
-            onClaim={() => act(() => claim("HIDER"))}
+            onClaim={() => claimSide("HIDER")}
           />
           <RosterColumn
             role="SEEKER"
@@ -218,7 +276,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             meId={me?.id ?? null}
             myRole={myRole}
             busy={busy}
-            onClaim={() => act(() => claim("SEEKER"))}
+            onClaim={() => claimSide("SEEKER")}
           />
         </div>
 
@@ -276,6 +334,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
           <p className="text-center text-xs text-neutral-500">Waiting for the host to start…</p>
         )}
       </footer>
+      {showQr ? <InviteQr code={room.code} onClose={() => setShowQr(false)} /> : null}
     </div>
   );
 }

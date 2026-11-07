@@ -82,3 +82,12 @@ export async function fetchPlayers(roomId: string): Promise<PlayerRow[]> {
   if (error) throw new Error(error.message);
   return (data ?? []) as PlayerRow[];
 }
+
+export function setDisplayName(roomId: string, name: string) {
+  return rpc<PlayerRow>("set_display_name", { p_room_id: roomId, p_display_name: name });
+}
+
+/** Returns the rematch room code (creates it on first call). */
+export function createRematch(roomId: string) {
+  return rpc<string>("create_rematch", { p_room_id: roomId });
+}

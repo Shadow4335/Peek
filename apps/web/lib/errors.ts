@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_GEOFENCE: "The play zone shape is invalid.",
   ROOM_CODE_EXHAUSTED: "Couldn't allocate a room code. Try again.",
   NETWORK: "Network error. Check your connection.",
+  ROOM_NOT_ENDED: "The match hasn't ended yet.",
+  "Anonymous sign-ins are disabled": "Guest sign-in is turned off for this server.",
 };
 
 /** Maps SQL raise codes / socket error codes to friendly copy. */

@@ -1,9 +1,10 @@
 "use client";
 
 import type { PingSnapshotRow, PingWaveEvent, PlayerRow, RoomRow } from "@hideseek/shared";
-import { Crown, Pause, Play, RotateCcw, Trophy } from "lucide-react";
+import { Crown, Loader2, Pause, Play, Repeat, RotateCcw, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/env";
 import { buildResults, groupWaves } from "@/lib/summary";
@@ -41,9 +42,25 @@ interface Props {
   players: PlayerRow[];
   me: PlayerRow | null;
   loadPingHistory?: PingHistoryLoader;
+  /** Creates/joins the rematch lobby (same zone + rules) and returns its code. */
+  onRematch?: () => Promise<{ code: string } | { error: string }>;
 }
 
-export function MatchSummary({ room, players, me, loadPingHistory = loadFromSupabase }: Props) {
+export function MatchSummary({ room, players, me, loadPingHistory = loadFromSupabase, onRematch }: Props) {
+  const router = useRouter();
+  const [rematching, setRematching] = useState(false);
+  const [rematchError, setRematchError] = useState<string | null>(null);
+  const goRematch = async () => {
+    if (!onRematch) return;
+    setRematching(true);
+    setRematchError(null);
+    const r = await onRematch();
+    if ("code" in r) router.push(`/room/${r.code}`);
+    else {
+      setRematchError(r.error);
+      setRematching(false);
+    }
+  };
   const { hiders, seekers, matchMs } = useMemo(() => buildResults(room, players), [room, players]);
   const [waves, setWaves] = useState<PingWaveEvent[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -210,12 +227,27 @@ export function MatchSummary({ room, players, me, loadPingHistory = loadFromSupa
         </ol>
       </section>
 
-      <Link
-        href="/"
-        className="mb-4 flex min-h-12 items-center justify-center rounded-2xl bg-hider text-base font-semibold text-black"
-      >
-        Play again
-      </Link>
+      <div className="mb-4 flex flex-col gap-2">
+        {onRematch ? (
+          <button
+            type="button"
+            onClick={() => void goRematch()}
+            disabled={rematching}
+            data-testid="rematch"
+            className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-hider text-base font-bold text-black disabled:opacity-70"
+          >
+            {rematching ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Repeat className="size-5" aria-hidden />}
+            {room.rematch_code ? `Join rematch · ${room.rematch_code}` : "Rematch — same zone & rules"}
+          </button>
+        ) : null}
+        {rematchError ? <p className="text-center text-sm text-seeker">{rematchError}</p> : null}
+        <Link
+          href="/"
+          className="flex min-h-12 items-center justify-center rounded-2xl bg-neutral-900 text-base font-semibold text-neutral-200 ring-1 ring-neutral-800"
+        >
+          Home
+        </Link>
+      </div>
     </div>
   );
 }

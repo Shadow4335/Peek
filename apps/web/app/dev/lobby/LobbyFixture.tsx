@@ -29,6 +29,7 @@ const room: RoomRow = {
   ended_at: null,
   winner: null,
   ping_wave_count: 0,
+  rematch_code: null,
   created_at: now,
   updated_at: now,
 };
@@ -106,6 +107,10 @@ export function LobbyFixture() {
         return null;
       }}
       leave={async () => "Leaving is disabled in the fixture."}
+      rename={async (name) => {
+        patchMe({ display_name: name });
+        return null;
+      }}
     />
   );
 }

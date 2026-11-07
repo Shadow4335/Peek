@@ -72,6 +72,7 @@ export class FakeStore implements GameStore {
       ended_at: null,
       winner: null,
       ping_wave_count: 0,
+      rematch_code: null,
       created_at: iso(now),
       updated_at: iso(now),
       ...overrides,

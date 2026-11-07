@@ -106,6 +106,8 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
 | `set_player_ready(room_id, ready, lat, lng, accuracy_m)` | authenticated | Ready requires role ≠ UNASSIGNED, accuracy ≤ 30 m, point inside `geofence_buffered`. |
 | `start_match(room_id, force)` | authenticated host | LOBBY → HEAD_START. Ready only counts if `ready_checked_at` < 120 s old (0002). |
 | `leave_room(room_id)` | authenticated | Leave LOBBY; host passes to earliest joiner; empty room deleted (0002). |
+| `set_display_name(room_id, name)` | authenticated | Rename yourself while in LOBBY (0003). |
+| `create_rematch(room_id)` | authenticated member | ENDED room → new LOBBY with same zone + rules, caller hosts; code published on `rooms.rematch_code`; idempotent (0003). |
 | `self_surrender(room_id)` | authenticated hider | Marks caller caught (`SELF_SURRENDER`). |
 | `attempt_proximity_tag(...)` | service_role | Option C proximity check (below). |
 | `confirm_manual_tag(room, seeker, hider)` | service_role | Hider accepted a manual Tag Request. |
@@ -327,6 +329,23 @@ lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
 - QA without Supabase: `npm run dev:fake -w @hideseek/server` (launch config `server-fake`) —
   FakeStore with seeded LOBBY/ACTIVE/ENDED rooms and simulated players; admin password `dev-admin`
   in that mode only.
+
+---
+
+## Low-friction UX (migration 0003)
+
+- **No typing gate:** `lib/names.ts` generates a name ("Sneaky Otter") that `loadName()` saves on
+  first use; the landing page prefills it (editable, dice to reroll). The name-prompt screen is gone —
+  deep links `/room/CODE` join straight away. Rename later in the lobby ("Playing as … ✎").
+- **Join:** the code field auto-joins on the 6th character. Lobby has a QR invite (`InviteQr`,
+  `qrcode` lib) encoding `/room/CODE`. Landing shows "Back to room CODE" for 6 h after entering a
+  room (`rememberRoom`; cleared on leave).
+- **Host:** builder defaults to Quick circle centred on the first GPS fix (derived, no taps), zoom 15.5;
+  "Create room" is on the first screen; rules collapse into an "Edit" summary row.
+- **Lobby:** claiming a side also sets Ready when the GPS check already passes.
+- **Rematch:** summary → "Rematch — same zone & rules" (`create_rematch`); others see
+  "Join rematch · CODE" via Realtime on `rooms.rematch_code`. Your previous side is re-claimed
+  automatically (`carryRoleInto` / `takeCarriedRole`, sessionStorage).
 
 ---
 
