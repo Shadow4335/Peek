@@ -45,11 +45,11 @@ export function SlideToConfirm({ label, onConfirm, tone = "danger", disabled = f
   };
 
   const track = stealth
-    ? "bg-neutral-950 ring-neutral-900 text-neutral-700"
+    ? "bg-surface ring-line text-ink-3"
     : tone === "danger"
-      ? "bg-rose-950/60 ring-rose-900 text-rose-200"
-      : "bg-neutral-900 ring-neutral-700 text-neutral-300";
-  const handle = stealth ? "bg-neutral-800 text-neutral-500" : tone === "danger" ? "bg-seeker text-black" : "bg-white text-black";
+      ? "bg-danger-soft ring-danger/40 text-ink"
+      : "bg-surface-raised ring-line text-ink";
+  const handle = stealth ? "bg-surface-hover text-ink-3" : tone === "danger" ? "bg-danger text-on-primary" : "bg-accent text-on-accent";
 
   return (
     <div

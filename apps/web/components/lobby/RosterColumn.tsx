@@ -1,5 +1,6 @@
 import type { PlayerRole, PlayerRow } from "@hideseek/shared";
-import { CircleCheck, CircleDashed, Crown } from "lucide-react";
+import { CircleCheck, CircleDashed, Crown, EyeOff, ScanEye } from "lucide-react";
+import { initialOf } from "@/components/map/markers";
 
 interface RosterColumnProps {
   role: Exclude<PlayerRole, "UNASSIGNED">;
@@ -12,8 +13,8 @@ interface RosterColumnProps {
 }
 
 const THEME = {
-  HIDER: { title: "Hiders", text: "text-hider", ring: "ring-lime-900", bg: "bg-lime-950/30", btn: "bg-hider text-black" },
-  SEEKER: { title: "Seekers", text: "text-seeker", ring: "ring-rose-900", bg: "bg-rose-950/30", btn: "bg-seeker text-black" },
+  HIDER: { title: "Hiders", text: "text-hider", ring: "ring-hider/30", bg: "bg-hider-soft/40", btn: "bg-hider text-on-accent" },
+  SEEKER: { title: "Seekers", text: "text-seeker-text", ring: "ring-seeker/35", bg: "bg-seeker-soft/50", btn: "bg-seeker text-on-primary" },
 } as const;
 
 const MAX_PLACEHOLDERS = 4;
@@ -28,11 +29,14 @@ export function RosterColumn({ role, players, capacity, meId, myRole, busy, onCl
     <section
       aria-label={t.title}
       data-testid={`column-${role}`}
-      className={`flex min-w-0 flex-col gap-2 rounded-3xl p-3 ring-1 ${t.ring} ${t.bg}`}
+      className={`flex min-w-0 flex-col gap-2 rounded-card p-3 ring-1 ${t.ring} ${t.bg}`}
     >
-      <header className="flex items-baseline justify-between">
-        <h2 className={`text-sm font-bold uppercase tracking-wider ${t.text}`}>{t.title}</h2>
-        <span className="font-mono text-xs text-neutral-400">
+      <header className="flex items-center justify-between">
+        <h2 className={`flex items-center gap-1.5 text-lg ${t.text}`}>
+          {role === "HIDER" ? <EyeOff className="size-4" aria-hidden /> : <ScanEye className="size-4" aria-hidden />}
+          {t.title}
+        </h2>
+        <span className="peek-timer text-sm text-ink-2">
           {players.length}/{capacity}
         </span>
       </header>
@@ -41,30 +45,41 @@ export function RosterColumn({ role, players, capacity, meId, myRole, busy, onCl
         {players.map((p) => (
           <li
             key={p.id}
-            className={`flex min-h-10 items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm ${
-              p.id === meId ? "bg-white/10 ring-1 ring-white/30" : "bg-black/40"
+            className={`flex min-h-11 items-center gap-2 rounded-button px-2 py-1.5 text-sm animate-enter ${
+              p.id === meId ? "bg-primary-soft ring-1 ring-primary/50" : "bg-surface/70"
             }`}
           >
+            <span
+              aria-hidden
+              className={`relative grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                role === "HIDER" ? "bg-hider-soft text-hider" : "bg-seeker-soft text-seeker-text"
+              }`}
+            >
+              {initialOf(p.display_name)}
+              {p.is_ready ? (
+                <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full bg-accent ring-2 ring-surface" />
+              ) : null}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{p.display_name}</span>
             {p.is_ready ? (
-              <CircleCheck className={`size-4 shrink-0 ${t.text}`} aria-label="Ready" />
+              <CircleCheck className="size-4 shrink-0 text-accent" aria-label="Ready" />
             ) : (
-              <CircleDashed className="size-4 shrink-0 text-neutral-600" aria-label="Not ready" />
+              <CircleDashed className="size-4 shrink-0 text-ink-3" aria-label="Not ready" />
             )}
-            <span className="truncate">{p.display_name}</span>
-            {p.id === meId ? <span className="text-[10px] uppercase text-neutral-400">you</span> : null}
-            {p.is_host ? <Crown className="ml-auto size-3.5 shrink-0 text-warn" aria-label="Host" /> : null}
+            {p.id === meId ? <span className="sr-only">(you)</span> : null}
+            {p.is_host ? <Crown className="size-3.5 shrink-0 text-reward" aria-label="Host" /> : null}
           </li>
         ))}
         {Array.from({ length: Math.min(open, MAX_PLACEHOLDERS) }).map((_, i) => (
           <li
             key={`open-${i}`}
-            className="flex min-h-10 items-center rounded-xl border border-dashed border-neutral-800 px-2.5 text-xs text-neutral-600"
+            className="flex min-h-11 items-center rounded-button border border-dashed border-line px-2.5 text-xs text-ink-2"
           >
             Open slot
           </li>
         ))}
         {open > MAX_PLACEHOLDERS ? (
-          <li className="px-2.5 text-xs text-neutral-600">+{open - MAX_PLACEHOLDERS} more open</li>
+          <li className="px-2.5 text-xs text-ink-3">+{open - MAX_PLACEHOLDERS} more open</li>
         ) : null}
       </ul>
 
@@ -73,7 +88,7 @@ export function RosterColumn({ role, players, capacity, meId, myRole, busy, onCl
           type="button"
           onClick={onClaim}
           disabled={busy || full}
-          className={`mt-auto min-h-11 rounded-2xl text-sm font-bold disabled:bg-neutral-800 disabled:text-neutral-500 ${t.btn}`}
+          className={`mt-auto min-h-12 rounded-button text-sm font-semibold transition-transform duration-150 active:scale-[.97] disabled:bg-surface-hover disabled:text-ink-3 ${t.btn}`}
         >
           {full ? "Full" : `Join ${t.title}`}
         </button>

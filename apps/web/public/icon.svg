@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#000"/>
-  <g fill="none" stroke="#a3e635" stroke-width="14">
-    <circle cx="256" cy="256" r="176" stroke-opacity=".35"/>
-    <circle cx="256" cy="256" r="116" stroke-opacity=".6"/>
-  </g>
-  <path d="M256 256 L256 80 A176 176 0 0 1 408 168 Z" fill="#a3e635" fill-opacity=".28"/>
-  <circle cx="256" cy="256" r="22" fill="#a3e635"/>
-  <circle cx="352" cy="176" r="18" fill="#fb7185"/>
+  <rect width="512" height="512" fill="#14151B"/>
+  <!-- Peek! mascot: soft sage blob with two eyes and a tiny smile -->
+  <path d="M256 104c92 0 150 66 150 160 0 86-58 144-150 144S106 350 106 264c0-94 58-160 150-160z" fill="#B6CD91"/>
+  <ellipse cx="208" cy="250" rx="26" ry="32" fill="#22271E"/>
+  <ellipse cx="304" cy="250" rx="26" ry="32" fill="#22271E"/>
+  <circle cx="216" cy="240" r="8" fill="#F0EEE9"/>
+  <circle cx="312" cy="240" r="8" fill="#F0EEE9"/>
+  <path d="M236 316c12 12 28 12 40 0" stroke="#22271E" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="392" cy="140" r="22" fill="#8878CB"/>
 </svg>

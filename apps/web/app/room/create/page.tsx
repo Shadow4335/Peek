@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CreateRoomClient } from "./CreateRoomClient";
 
-export const metadata: Metadata = { title: "Create room · Hide & Seek" };
+export const metadata: Metadata = { title: "Create room · Peek!" };
 
 export default function CreateRoomPage() {
   return (

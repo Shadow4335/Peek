@@ -145,7 +145,7 @@ export default function GeofenceBuilder() {
   useEffect(() => {
     if (!map) return;
     const broken = analysis.issue !== null && analysis.issue !== "TOO_FEW_POINTS";
-    const color = broken ? COLORS.seeker : COLORS.hider;
+    const color = broken ? COLORS.zoneBroken : COLORS.zone;
     if (geometry) {
       setGeoJson(map, "fence", feature(geometry, { color }));
     } else if (mode === "polygon" && vertices.length === 2) {
@@ -278,11 +278,11 @@ export default function GeofenceBuilder() {
         <Link
           href="/"
           aria-label="Back"
-          className="pointer-events-auto grid size-11 place-items-center rounded-full bg-black/80 ring-1 ring-neutral-700 backdrop-blur"
+          className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface/90 text-ink ring-1 ring-line backdrop-blur transition-transform active:scale-[.97]"
         >
           <ArrowLeft className="size-5" />
         </Link>
-        <div className="rounded-full bg-black/80 px-4 py-2 text-sm font-semibold ring-1 ring-neutral-700 backdrop-blur">
+        <div className="rounded-full bg-surface/90 px-4 py-2 font-display text-base font-semibold ring-1 ring-line backdrop-blur">
           {step === "draw" ? "Set the play zone" : "Match settings"}
         </div>
         <button
@@ -290,7 +290,7 @@ export default function GeofenceBuilder() {
           aria-label="Center on my location"
           onClick={locate}
           disabled={!fix}
-          className="pointer-events-auto grid size-11 place-items-center rounded-full bg-black/80 ring-1 ring-neutral-700 backdrop-blur disabled:opacity-40"
+          className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface/90 text-ink ring-1 ring-line backdrop-blur transition-transform active:scale-[.97] disabled:opacity-40"
         >
           <LocateFixed className="size-5" />
         </button>
@@ -305,13 +305,13 @@ export default function GeofenceBuilder() {
       {/* Bottom sheet */}
       <section
         ref={sheetRef}
-        className={`pb-safe absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-3xl bg-black/90 px-4 pt-4 ring-1 ring-neutral-800 backdrop-blur-md ${
+        className={`pb-safe absolute inset-x-0 bottom-0 flex animate-sheet flex-col gap-4 rounded-t-panel bg-surface/95 px-4 pt-4 shadow-panel ring-1 ring-line backdrop-blur-md ${
           step === "rules" ? "max-h-[78vh] overflow-y-auto" : ""
         }`}
       >
         {step === "draw" ? (
           <>
-            <div role="tablist" aria-label="Zone mode" className="grid grid-cols-2 gap-1 rounded-2xl bg-neutral-900 p-1">
+            <div role="tablist" aria-label="Zone mode" className="grid grid-cols-2 gap-1 rounded-button bg-surface-raised p-1">
               {(
                 [
                   ["polygon", "Pin-drop polygon", Hexagon],
@@ -324,7 +324,7 @@ export default function GeofenceBuilder() {
                   aria-selected={mode === m}
                   onClick={() => switchMode(m)}
                   className={`flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold ${
-                    mode === m ? "bg-white text-black" : "text-neutral-400"
+                    mode === m ? "bg-primary-soft text-primary-text ring-1 ring-inset ring-primary/40" : "text-ink-2"
                   }`}
                 >
                   <Icon className="size-4" aria-hidden />
@@ -333,7 +333,7 @@ export default function GeofenceBuilder() {
               ))}
             </div>
 
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-ink-2">
               {mode === "polygon"
                 ? "Tap the map to drop pins around the play area. Drag a pin to adjust it."
                 : center
@@ -345,21 +345,21 @@ export default function GeofenceBuilder() {
               <span
                 data-testid="area-readout"
                 className={`rounded-full px-3 py-1 font-mono font-semibold ring-1 ${
-                  valid ? "text-hider ring-lime-900" : "text-neutral-300 ring-neutral-800"
+                  valid ? "bg-accent-soft text-accent ring-accent/35" : "text-ink ring-line"
                 }`}
               >
                 {analysis.areaM2 > 0 ? formatArea(analysis.areaM2) : "— m²"}
               </span>
               {mode === "polygon" ? (
-                <span className="rounded-full px-3 py-1 text-neutral-400 ring-1 ring-neutral-800">
+                <span className="rounded-full px-3 py-1 text-ink-2 ring-1 ring-line">
                   {vertices.length} pin{vertices.length === 1 ? "" : "s"}
                 </span>
               ) : (
-                <span className="rounded-full px-3 py-1 text-neutral-400 ring-1 ring-neutral-800">
+                <span className="rounded-full px-3 py-1 text-ink-2 ring-1 ring-line">
                   r = {formatDistance(radiusM)}
                 </span>
               )}
-              <span className="text-xs text-neutral-500">dashed line = 12 m GPS drift buffer</span>
+              <span className="text-xs text-ink-3">dashed line = 12 m GPS drift buffer</span>
             </div>
 
             {mode === "polygon" ? (
@@ -397,7 +397,7 @@ export default function GeofenceBuilder() {
               <ErrorNotice>{ISSUE_TEXT[analysis.issue]}</ErrorNotice>
             ) : null}
             {geoStatus === "denied" ? (
-              <p className="flex items-center gap-2 text-xs text-warn">
+              <p className="flex items-center gap-2 text-xs text-reward">
                 <Crosshair className="size-4" aria-hidden /> Location is blocked — you can still draw, but
                 you&apos;ll need it to play.
               </p>
@@ -407,14 +407,14 @@ export default function GeofenceBuilder() {
               type="button"
               onClick={() => setStep("rules")}
               data-testid="settings-summary"
-              className="flex min-h-12 items-center justify-between gap-2 rounded-2xl bg-neutral-900 px-4 text-left text-sm ring-1 ring-neutral-800"
+              className="flex min-h-12 items-center justify-between gap-2 rounded-button bg-surface-raised px-4 text-left text-sm ring-1 ring-line"
             >
-              <span className="flex items-center gap-2 text-neutral-300">
+              <span className="flex items-center gap-2 text-ink">
                 <Settings2 className="size-4 shrink-0" aria-hidden />
                 {rules.max_players} players · {rules.seeker_count} seeker{rules.seeker_count === 1 ? "" : "s"} ·{" "}
                 {formatDuration(rules.game_duration_mins * 60)} · {formatDuration(rules.head_start_secs)} head start
               </span>
-              <span className="font-semibold text-hider">Edit</span>
+              <span className="font-semibold text-primary-text">Edit</span>
             </button>
 
             <ErrorNotice>{error}</ErrorNotice>

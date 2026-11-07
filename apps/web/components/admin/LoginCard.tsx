@@ -26,14 +26,14 @@ export function LoginCard() {
   return (
     <form
       onSubmit={submit}
-      className="m-auto flex w-full max-w-sm flex-col gap-5 rounded-3xl bg-neutral-950 p-8 ring-1 ring-neutral-800"
+      className="m-auto flex w-full max-w-sm flex-col gap-5 rounded-card bg-surface p-8 ring-1 ring-line"
     >
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="grid size-16 place-items-center rounded-2xl bg-neutral-900 ring-1 ring-neutral-700">
-          <Lock className="size-7 text-warn" aria-hidden />
+        <div className="grid size-16 place-items-center rounded-button bg-surface-raised ring-1 ring-line">
+          <Lock className="size-7 text-reward" aria-hidden />
         </div>
-        <h1 className="text-2xl font-black">Referee console</h1>
-        <p className="text-sm text-neutral-400">Admin access only.</p>
+        <h1 className="text-2xl font-bold">Referee console</h1>
+        <p className="text-sm text-ink-2">Admin access only.</p>
       </div>
       <input
         type="password"
@@ -42,7 +42,7 @@ export function LoginCard() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="h-14 rounded-2xl bg-black px-4 text-lg ring-1 ring-inset ring-neutral-700 outline-none focus:ring-2 focus:ring-warn"
+        className="h-14 rounded-button bg-bg px-4 text-lg ring-1 ring-inset ring-line outline-none focus:ring-2 focus:ring-primary-text"
       />
       <ErrorNotice>{error}</ErrorNotice>
       <Button type="submit" block loading={busy} disabled={!password}>

@@ -25,13 +25,14 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
   const pings: PingDot[] = match.waves.flatMap((w, rank) =>
     w.pings
       .filter((p) => uncaughtIds.has(p.playerId))
-      .map((p) => ({ ...p, label: nameOf.get(p.playerId) ?? "Hider", rank })),
+      .map((p) => ({ ...p, label: nameOf.get(p.playerId) ?? "Hider", rank, wave: w.waveNumber, capturedAt: p.heartbeatAt })),
   );
 
   const oob = match.outOfBounds.filter((o) => uncaughtIds.has(o.playerId));
   const markers: LiveMarker[] = oob.map((o) => ({
     id: o.playerId,
-    label: `${nameOf.get(o.playerId) ?? "Hider"} · OUT`,
+    label: nameOf.get(o.playerId) ?? "Hider",
+    note: "out of bounds",
     lat: o.location.lat,
     lng: o.location.lng,
     kind: "oob-hider",
@@ -49,6 +50,7 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
         myFix={fix}
         pings={pings}
         markers={markers}
+        now={now}
         padding={{ top: 90, bottom: spectator ? 40 : 230 }}
       />
       <Hud
@@ -66,18 +68,18 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
           </Banner>
         ) : null}
         {myExposure ? (
-          <Banner tone="bad" icon={<Eye className="size-5" />}>
-            Exposed! Hiders can see you for {Math.ceil(msUntil(myExposure.until, now) / 1000)}s
+          <Banner tone="warn" icon={<Eye className="size-5" />}>
+            Two misses — hiders can see you for {Math.ceil(msUntil(myExposure.until, now) / 1000)}s
           </Banner>
         ) : null}
         {oob.map((o) => (
           <Banner key={o.playerId} tone="warn" icon={<ShieldAlert className="size-5" />}>
-            {nameOf.get(o.playerId) ?? "A hider"} is out of bounds — live on map
+            {nameOf.get(o.playerId) ?? "A hider"} is out of bounds — position shown, updates every 10 s
           </Banner>
         ))}
         {match.waves.length === 0 && !spectator ? (
           <Banner tone="info" icon={<Eye className="size-5" />}>
-            Waiting for the first ping wave…
+            Waiting for the first ping…
           </Banner>
         ) : null}
         <Toasts toasts={match.toasts} />

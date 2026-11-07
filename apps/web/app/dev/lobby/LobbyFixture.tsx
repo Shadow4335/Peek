@@ -74,12 +74,12 @@ export function LobbyFixture() {
 
   if (!mounted) {
     return (
-      <button type="button" className="m-auto rounded-xl bg-white px-4 py-3 text-black" onClick={() => setMounted(true)}>
+      <button type="button" className="m-auto rounded-xl bg-white px-4 py-3 text-on-accent" onClick={() => setMounted(true)}>
         Mount lobby fixture
       </button>
     );
   }
-  if (r.status !== "LOBBY") return <p data-testid="match-status" className="m-auto text-2xl font-black">{r.status}</p>;
+  if (r.status !== "LOBBY") return <p data-testid="match-status" className="m-auto text-2xl font-bold">{r.status}</p>;
 
   return (
     <Lobby

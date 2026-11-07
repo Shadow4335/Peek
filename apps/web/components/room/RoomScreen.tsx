@@ -18,9 +18,9 @@ export function RoomScreen({ code }: { code: string }) {
         {r.phase === "error" ? (
           <ErrorNotice>{r.error}</ErrorNotice>
         ) : (
-          <p className="text-center text-neutral-300">You left the room.</p>
+          <p className="text-center font-display text-2xl text-ink">You left the room.</p>
         )}
-        <Link href="/" className="text-center text-sm text-hider underline underline-offset-4">
+        <Link href="/" className="mx-auto flex min-h-12 items-center rounded-button bg-surface-raised px-5 text-sm font-semibold text-ink ring-1 ring-line">
           Back to start
         </Link>
       </div>
@@ -29,8 +29,9 @@ export function RoomScreen({ code }: { code: string }) {
 
   if (r.phase === "loading" || !r.room) {
     return (
-      <div className="grid flex-1 place-items-center text-neutral-500">
-        <Loader2 className="size-6 animate-spin" aria-label="Loading room" />
+      <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 text-ink-2">
+        <Loader2 className="size-6 animate-spin text-primary-text" aria-hidden />
+        <span className="text-sm">Joining the room…</span>
       </div>
     );
   }

@@ -17,17 +17,17 @@ export function TagRequestModal({
   const left = Math.max(0, Date.parse(request.expiresAt) - now);
   if (left <= 0) return null;
   return (
-    <div role="alertdialog" aria-label="Tag request" className="fixed inset-0 z-[70] grid place-items-end bg-black/80 p-4 pb-safe">
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-3xl bg-neutral-950 p-5 ring-1 ring-seeker">
+    <div role="alertdialog" aria-label="Tag request" className="fixed inset-0 z-[70] grid place-items-end bg-bg/85 p-4 pb-safe">
+      <div className="flex w-full max-w-md animate-sheet flex-col gap-4 rounded-panel bg-surface p-5 shadow-panel ring-1 ring-reward/50">
         <div className="flex items-center gap-3">
-          <Hand className="size-8 text-seeker" aria-hidden />
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-reward-soft"><Hand className="size-6 text-reward" aria-hidden /></span>
           <div>
-            <p className="text-lg font-bold">{request.seekerName} says they tagged you</p>
-            <p className="text-sm text-neutral-400">GPS couldn&apos;t confirm it. Are they right next to you?</p>
+            <h2 className="text-xl leading-tight">{request.seekerName} says they tagged you</h2>
+            <p className="text-sm text-ink-2">GPS couldn&apos;t confirm it. Are they right next to you?</p>
           </div>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-neutral-800">
-          <div className="h-full bg-seeker transition-[width] duration-200" style={{ width: `${(left / 15000) * 100}%` }} />
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-hover">
+          <div className="h-full bg-reward transition-[width] duration-200" style={{ width: `${(left / 15000) * 100}%` }} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => onAnswer(false)}>

@@ -1,6 +1,7 @@
 import type { PingSnapshotRow, PingWaveEvent, PlayerRow, RoomRow } from "@hideseek/shared";
 
-export const TRAIL_COLORS = ["#a3e635", "#38bdf8", "#f472b6", "#facc15", "#a78bfa", "#fb923c", "#2dd4bf", "#f87171"];
+/** Muted, brand-harmonious per-hider colours for the replay (not role semantics). */
+export const TRAIL_COLORS = ["#c58f87", "#b6cd91", "#9db4d9", "#d9bc81", "#c9a2c7", "#7fb3b5", "#e0a57a", "#a8a0d6"];
 
 export interface HiderResult {
   player: PlayerRow;

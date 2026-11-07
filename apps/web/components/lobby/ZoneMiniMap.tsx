@@ -24,7 +24,7 @@ export default function ZoneMiniMap({ fence, buffered, fix, inside }: Props) {
   useEffect(() => {
     if (!map) return;
     ensureFenceLayers(map);
-    setGeoJson(map, "fence", feature(fence, { color: COLORS.hider }));
+    setGeoJson(map, "fence", feature(fence, { color: COLORS.zone }));
     setGeoJson(map, "fence-buffer", feature(buffered));
     const [w, s, e, n] = bbox(feature(buffered) as GeoJSON.Feature<GeoJSON.Polygon>);
     map.fitBounds(
@@ -41,8 +41,8 @@ export default function ZoneMiniMap({ fence, buffered, fix, inside }: Props) {
     if (!map || !fix) return;
     dot.current ??= new Marker({ element: userDotElement() }).setLngLat([fix.lng, fix.lat]).addTo(map);
     dot.current.setLngLat([fix.lng, fix.lat]);
-    const el = dot.current.getElement();
-    el.style.background = inside ? "#3b82f6" : COLORS.seeker;
+    // Lavender inside; muted red ring + the GPS badge's text say when you're outside.
+    dot.current.getElement().classList.toggle("peek-you--warn", !inside);
   }, [map, fix, inside]);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ZoneMiniMap({ fence, buffered, fix, inside }: Props) {
   }, [map]);
 
   return (
-    <div className="relative h-40 overflow-hidden rounded-3xl ring-1 ring-neutral-800">
+    <div className="relative h-40 overflow-hidden rounded-card ring-1 ring-line">
       <div className="absolute inset-0">
         <div ref={containerRef} className="h-full w-full" data-testid="zone-mini-map" />
       </div>

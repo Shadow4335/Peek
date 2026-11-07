@@ -48,7 +48,26 @@ const KEEP_WAVES = PING_HISTORY_OPACITY.length;
  * Client-side match state fed by the game-server socket: ping history (last 3 waves),
  * seeker exposures, out-of-bounds hiders, tag requests, haptic alerts and toasts.
  */
-export function useMatch(socket: GameSocket | null, room: RoomRow, me: PlayerRow | null, refresh: () => void) {
+export interface MatchOptions {
+  /** Player names for friendly copy ("Bea was spotted!"). */
+  nameOf?: (playerId: string) => string | undefined;
+  /** Announce incoming ping waves (seekers / spectators). */
+  announcePings?: boolean;
+}
+
+export function useMatch(
+  socket: GameSocket | null,
+  room: RoomRow,
+  me: PlayerRow | null,
+  refresh: () => void,
+  { nameOf, announcePings = false }: MatchOptions = {},
+) {
+  const nameOfRef = useRef(nameOf);
+  const announceRef = useRef(announcePings);
+  useEffect(() => {
+    nameOfRef.current = nameOf;
+    announceRef.current = announcePings;
+  }, [nameOf, announcePings]);
   const myId = me?.id ?? null;
   const [waves, setWaves] = useState<PingWaveEvent[]>([]);
   const [exposures, setExposures] = useState<Record<string, SeekerExposureEvent>>({});
@@ -109,6 +128,11 @@ export function useMatch(socket: GameSocket | null, room: RoomRow, me: PlayerRow
     const onWave = (w: PingWaveEvent) => {
       addWave(w);
       if (myId && w.pings.some((p) => p.playerId === myId)) toast("Ping sent — seekers saw your position", "warn");
+      else if (announceRef.current && w.pings.length > 0) {
+        const first = nameOfRef.current?.(w.pings[0]!.playerId);
+        toast(w.pings.length === 1 && first ? `${first} was spotted!` : `${w.pings.length} hiders spotted!`, "warn");
+        vibrate(120);
+      }
     };
     const onPreWarning = (p: { inMs: number; haptic: number[] }) => {
       vibrate(p.haptic);

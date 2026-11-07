@@ -237,14 +237,14 @@ export function MatchFixture() {
       <button
         type="button"
         onClick={() => setPanel((p) => !p)}
-        className="fixed bottom-1/2 left-0 z-[80] rounded-r-lg bg-fuchsia-600 px-1.5 py-2 text-[10px] font-bold text-white"
+        className="fixed bottom-1/2 left-0 z-[80] rounded-r-lg bg-fuchsia-600 px-1.5 py-2 text-[10px] font-bold text-ink"
       >
         QA
       </button>
       {panel ? (
         <div data-testid="qa-panel" className="fixed top-1/3 left-6 z-[80] flex w-40 flex-col gap-1 rounded-xl bg-fuchsia-950/95 p-2 text-[11px]">
           {sim.map(([label, fn]) => (
-            <button key={label} type="button" onClick={fn} className="rounded bg-fuchsia-800 px-2 py-1 text-left text-white">
+            <button key={label} type="button" onClick={fn} className="rounded bg-fuchsia-800 px-2 py-1 text-left text-ink">
               {label}
             </button>
           ))}
@@ -301,7 +301,7 @@ function RolePicker({ onPick }: { onPick: (r: PlayerRole, st: RoomStatus) => voi
           <button
             key={`${r}-${st}`}
             type="button"
-            className="rounded-xl bg-white px-4 py-3 font-semibold text-black"
+            className="rounded-xl bg-white px-4 py-3 font-semibold text-on-accent"
             onClick={() => onPick(r, st)}
           >
             {r} · {st}

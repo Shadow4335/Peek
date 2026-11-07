@@ -23,22 +23,22 @@ export function InviteQr({ code, onClose }: { code: string; onClose: () => void 
     <div
       role="dialog"
       aria-label="Invite QR code"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black/95 p-6"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-bg/95 p-6"
       onClick={onClose}
     >
-      <p className="text-sm uppercase tracking-[0.3em] text-neutral-400">Scan to join</p>
+      <h2 className="text-2xl">Scan to join the squad</h2>
       <div
         data-testid="invite-qr"
-        className="w-full max-w-xs rounded-3xl bg-white p-4 [&>svg]:h-auto [&>svg]:w-full"
+        className="w-full max-w-xs animate-reveal rounded-card bg-white p-4 [&>svg]:h-auto [&>svg]:w-full"
         // Generated locally by the qrcode library from our own URL.
         dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}
       />
-      <p className="font-mono text-4xl font-black tracking-[0.3em] text-hider">{code}</p>
+      <p className="font-mono text-4xl font-bold tracking-[0.3em] text-primary-text">{code}</p>
       <button
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="grid size-12 place-items-center rounded-full bg-neutral-900 ring-1 ring-neutral-700"
+        className="grid size-12 place-items-center rounded-full bg-surface-raised text-ink ring-1 ring-line"
       >
         <X className="size-5" />
       </button>

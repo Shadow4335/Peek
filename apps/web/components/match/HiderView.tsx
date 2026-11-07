@@ -3,6 +3,8 @@
 import { AlertTriangle, EyeOff, Moon, ShieldAlert } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { SHEET_CLASS, SheetGrabber } from "@/components/ui/Card";
 import { SlideToConfirm } from "@/components/ui/SlideToConfirm";
 import { formatClock } from "@/lib/useNow";
 import { HeadStartBanner } from "./HeadStartBanner";
@@ -27,13 +29,14 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
   const myPings: PingDot[] = match.waves.flatMap((w, rank) =>
     w.pings
       .filter((p) => p.playerId === me.id)
-      .map((p) => ({ ...p, label: "Your ping", rank })),
+      .map((p) => ({ ...p, label: "Your ping", rank, wave: w.waveNumber, capturedAt: p.heartbeatAt })),
   );
 
   const exposed = match.exposures.filter((e) => Date.parse(e.until) > now && e.location);
   const markers: LiveMarker[] = exposed.map((e) => ({
     id: e.seekerPlayerId,
-    label: `${nameOf.get(e.seekerPlayerId) ?? "Seeker"} · ${Math.ceil(msUntil(e.until, now) / 1000)}s`,
+    label: nameOf.get(e.seekerPlayerId) ?? "Seeker",
+    note: `exposed ${Math.ceil(msUntil(e.until, now) / 1000)} s`,
     lat: e.location!.lat,
     lng: e.location!.lng,
     kind: "exposed-seeker",
@@ -50,6 +53,7 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
         myFix={fix}
         pings={myPings}
         markers={markers}
+        now={now}
         padding={{ top: 90, bottom: active ? 190 : 120 }}
       />
       <Hud
@@ -62,8 +66,8 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
       >
         {!active ? <HeadStartBanner /> : null}
         {penalized ? (
-          <Banner tone="bad" icon={<ShieldAlert className="size-5" />}>
-            Out of bounds — seekers can see you! Get back inside.
+          <Banner tone="warn" icon={<ShieldAlert className="size-5" />}>
+            Out of bounds — seekers can see your position. Get back inside!
           </Banner>
         ) : graceLeft > 0 ? (
           <Banner tone="warn" icon={<AlertTriangle className="size-5" />}>
@@ -72,20 +76,17 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
         ) : null}
         {exposed.length > 0 ? (
           <Banner tone="good" icon={<EyeOff className="size-5" />}>
-            {exposed.length === 1 ? "A seeker is" : `${exposed.length} seekers are`} exposed — see the red marker
+            {exposed.length === 1 ? "A seeker is" : `${exposed.length} seekers are`} exposed — look for the lavender pin
           </Banner>
         ) : null}
         <Toasts toasts={match.toasts} />
       </Hud>
 
-      <section className="pb-safe absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 rounded-t-3xl bg-black/90 px-4 pt-4 ring-1 ring-neutral-800 backdrop-blur">
-        <button
-          type="button"
-          onClick={() => setStealth(true)}
-          className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-neutral-100 text-base font-bold text-black"
-        >
-          <Moon className="size-5" aria-hidden /> Stealth pocket mode
-        </button>
+      <section className={SHEET_CLASS} aria-label="Hider controls">
+        <SheetGrabber />
+        <Button variant="secondary" block onClick={() => setStealth(true)} icon={<Moon className="size-5" aria-hidden />}>
+          Stealth pocket mode
+        </Button>
         {active ? (
           <SlideToConfirm label="Slide to self-surrender (I was caught)" onConfirm={() => void match.surrender()} />
         ) : null}
@@ -107,13 +108,16 @@ export function Banner({
   children: React.ReactNode;
 }) {
   const t = {
-    warn: "bg-amber-950/90 text-warn ring-amber-800",
-    bad: "bg-rose-950/90 text-seeker ring-rose-700",
-    good: "bg-lime-950/90 text-hider ring-lime-800",
-    info: "bg-neutral-900/90 text-neutral-200 ring-neutral-700",
+    warn: "bg-reward-soft text-reward ring-reward/40",
+    bad: "bg-danger-soft text-danger ring-danger/40",
+    good: "bg-accent-soft text-accent ring-accent/35",
+    info: "bg-surface/95 text-ink ring-line",
   }[tone];
   return (
-    <div role="status" className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold ring-1 backdrop-blur ${t}`}>
+    <div
+      role="status"
+      className={`pointer-events-auto flex items-center gap-2 rounded-button px-3 py-2.5 text-sm font-semibold shadow-panel ring-1 backdrop-blur animate-enter ${t}`}
+    >
       {icon}
       <span>{children}</span>
     </div>

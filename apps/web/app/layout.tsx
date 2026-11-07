@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { Fredoka, Poppins } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
+// Self-hosted at build time by next/font — no runtime requests to Google.
+const fredoka = Fredoka({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-fredoka", display: "swap" });
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins", display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Hide & Seek",
-  description: "Real-world hide and seek with live geofenced pings.",
-  applicationName: "Hide & Seek",
-  appleWebApp: { capable: true, title: "Hide&Seek", statusBarStyle: "black-translucent" },
+  title: "Peek! — Hide well. Seek better.",
+  description: "Real-world hide and seek with friends: draw a zone, hide, and get pinged.",
+  applicationName: "Peek!",
+  appleWebApp: { capable: true, title: "Peek!", statusBarStyle: "black-translucent" },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192" }],
     apple: [{ url: "/icon-180.png", sizes: "180x180" }],
@@ -14,21 +19,21 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-// Mobile-locked: no pinch zoom (the map handles its own gestures), OLED black chrome.
+// Mobile-locked: no pinch zoom (the map handles its own gestures), Midnight Playground chrome.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#000000",
+  themeColor: "#14151b",
   colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="flex h-full flex-col">
+    <html lang="en" className={`${fredoka.variable} ${poppins.variable} h-full antialiased`}>
+      <body className="flex h-full flex-col bg-bg text-ink">
         <Providers>{children}</Providers>
       </body>
     </html>

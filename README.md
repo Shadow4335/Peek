@@ -1,4 +1,6 @@
-# IRL Hide & Seek
+# Peek!
+
+_Hide well. Seek better._
 
 Mobile-only PWA for real-world hide and seek: draw a geofence, pick sides, then hiders get pinged
 on a random timer while seekers close in. See [CLAUDE.md](CLAUDE.md) for architecture, schema,

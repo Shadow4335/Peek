@@ -1,10 +1,19 @@
-import { Footprints } from "lucide-react";
+import { EyeOff } from "lucide-react";
 
-/** Clock lives in the HUD; this just tells the hider what to do. */
+/** Hider role reveal during the head start (the clock lives in the HUD). */
 export function HeadStartBanner() {
   return (
-    <div className="flex items-center gap-2 rounded-2xl bg-lime-950/90 px-4 py-3 text-sm font-semibold text-hider ring-1 ring-lime-800 backdrop-blur">
-      <Footprints className="size-5" aria-hidden /> Head start — go hide! Seekers are locked out.
-    </div>
+    <section
+      aria-label="Your role"
+      className="pointer-events-auto flex animate-reveal items-center gap-3 rounded-card bg-surface/95 p-3 shadow-panel ring-1 ring-hider/40 backdrop-blur"
+    >
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-hider-soft">
+        <EyeOff className="size-5 text-hider" aria-hidden />
+      </span>
+      <span>
+        <span className="block font-display text-lg leading-tight text-hider">Sneaky Hider</span>
+        <span className="text-sm text-ink-2">Find your spot. Stay quiet. Seekers are locked out.</span>
+      </span>
+    </section>
   );
 }

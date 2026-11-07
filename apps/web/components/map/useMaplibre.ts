@@ -4,6 +4,7 @@ import { AttributionControl, getVersion, Map as MlMap, setWorkerUrl, type LngLat
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useState, type RefObject } from "react";
 import { publicEnv } from "@/lib/env";
+import { applyPeekMapTheme } from "./mapTheme";
 
 export interface MapInit {
   center?: LngLatLike;
@@ -45,6 +46,7 @@ export function useMaplibre(container: RefObject<HTMLDivElement | null>, init: M
     const onLoad = () => {
       // Compact attribution starts expanded; collapse it so it doesn't cover small maps.
       el.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+      applyPeekMapTheme(m);
       setMap(m);
     };
     const onError = (e: MapEventType["error"]) => {

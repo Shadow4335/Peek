@@ -14,10 +14,10 @@ export function Slider({ label, value, min, max, step = 1, format = String, onCh
   return (
     <div className="flex flex-col">
       <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className="text-sm text-neutral-300">
+        <label htmlFor={id} className="text-sm text-ink">
           {label}
         </label>
-        <output htmlFor={id} className="font-mono text-base font-semibold text-white tabular-nums">
+        <output htmlFor={id} className="peek-timer text-base font-semibold text-ink">
           {format(value)}
         </output>
       </div>
@@ -31,7 +31,7 @@ export function Slider({ label, value, min, max, step = 1, format = String, onCh
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full"
       />
-      {hint ? <p className="-mt-1 text-xs text-neutral-500">{hint}</p> : null}
+      {hint ? <p className="-mt-1 text-xs text-ink-2">{hint}</p> : null}
     </div>
   );
 }

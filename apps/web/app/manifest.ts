@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Hide & Seek — IRL",
-    short_name: "Hide&Seek",
-    description: "Real-world hide and seek with live geofenced pings.",
+    name: "Peek! — real-world hide & seek",
+    short_name: "Peek!",
+    description: "Hide well. Seek better. Real-world hide and seek with friends.",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#000000",
-    theme_color: "#000000",
+    background_color: "#14151b",
+    theme_color: "#14151b",
     categories: ["games", "sports"],
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

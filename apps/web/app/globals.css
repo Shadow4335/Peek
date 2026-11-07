@@ -1,32 +1,129 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   Peek! — "Midnight Playground" design tokens.
+   Single source of truth for colour, type, shape and motion. Components use the
+   Tailwind utilities generated from @theme below (bg-surface, text-ink-2,
+   rounded-card, …) — never one-off hex values. Map/marker code reads the same
+   values from components/map/layers.ts (PEEK_COLORS).
+   ============================================================================= */
+
 :root {
-  --background: #000000;
-  --foreground: #f5f5f5;
-  --hider: #a3e635;
-  --seeker: #fb7185;
-  --warn: #fbbf24;
+  color-scheme: dark;
+
+  /* Surfaces */
+  --peek-bg: #14151b;
+  --peek-surface: #202129;
+  --peek-surface-raised: #2a2b34;
+  --peek-surface-hover: #333440;
+  --peek-border: #353640;
+
+  /* Brand */
+  --peek-primary: #8878cb; /* dusty lavender — you, seekers, selection */
+  --peek-primary-soft: #353047;
+  --peek-primary-text: #c5b9e9;
+  --peek-accent: #b6cd91; /* sage — primary CTA, ready, fresh ping */
+  --peek-accent-soft: #34402d;
+  --peek-hider: #c58f87; /* muted coral — hiders, aged pings */
+  --peek-hider-soft: #463533;
+  --peek-reward: #d9bc81; /* amber — alerts, trophies, countdown caution */
+  --peek-reward-soft: #443a31;
+  --peek-danger: #dc8d90; /* genuine errors / destructive only */
+  --peek-danger-soft: #47292c;
+
+  /* Text */
+  --peek-text: #f0eee9;
+  --peek-text-secondary: #a4a3ae;
+  --peek-text-tertiary: #858593;
+  --peek-on-accent: #22271e;
+  --peek-on-primary: #14151b;
+
+  /* Motion */
+  --peek-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --peek-ease-playful: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --peek-duration-fast: 160ms;
+  --peek-duration-normal: 250ms;
+  --peek-duration-enter: 350ms;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-hider: var(--hider);
-  --color-seeker: var(--seeker);
-  --color-warn: var(--warn);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  /* Colours → bg-*, text-*, ring-*, border-* utilities */
+  --color-bg: var(--peek-bg);
+  --color-surface: var(--peek-surface);
+  --color-surface-raised: var(--peek-surface-raised);
+  --color-surface-hover: var(--peek-surface-hover);
+  --color-line: var(--peek-border);
+  --color-primary: var(--peek-primary);
+  --color-primary-soft: var(--peek-primary-soft);
+  --color-primary-text: var(--peek-primary-text);
+  --color-accent: var(--peek-accent);
+  --color-accent-soft: var(--peek-accent-soft);
+  --color-hider: var(--peek-hider);
+  --color-hider-soft: var(--peek-hider-soft);
+  --color-seeker: var(--peek-primary);
+  --color-seeker-soft: var(--peek-primary-soft);
+  --color-seeker-text: var(--peek-primary-text);
+  --color-reward: var(--peek-reward);
+  --color-reward-soft: var(--peek-reward-soft);
+  --color-danger: var(--peek-danger);
+  --color-danger-soft: var(--peek-danger-soft);
+  --color-ink: var(--peek-text);
+  --color-ink-2: var(--peek-text-secondary);
+  --color-ink-3: var(--peek-text-tertiary);
+  --color-on-accent: var(--peek-on-accent);
+  --color-on-primary: var(--peek-on-primary);
+  --color-background: var(--peek-bg);
+  --color-foreground: var(--peek-text);
+
+  /* Type */
+  --font-sans: var(--font-poppins), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-fredoka), var(--font-poppins), system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Shape → rounded-* utilities */
+  --radius-sm: 8px;
+  --radius-button: 12px;
+  --radius-card: 20px;
+  --radius-panel: 24px;
+
+  /* Lifted panels only */
+  --shadow-panel: 0 8px 24px rgb(0 0 0 / 0.14);
+
+  /* Motion → animate-* utilities */
+  --ease-smooth: var(--peek-ease-smooth);
+  --ease-playful: var(--peek-ease-playful);
+  --animate-enter: peek-fade-up 350ms var(--peek-ease-smooth) both;
+  --animate-sheet: peek-sheet-up 320ms var(--peek-ease-smooth) both;
+  --animate-reveal: peek-reveal 450ms var(--peek-ease-playful) both;
+  --animate-pop: peek-pop 300ms var(--peek-ease-playful) both;
+  --animate-caution: peek-caution 450ms ease-out 1;
 }
 
 html,
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--peek-bg);
+  color: var(--peek-text);
   font-family: var(--font-sans);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Timers and scores never jitter on tick. */
+.peek-timer {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Native-app feel: no text selection on chrome, but allow it in inputs. */
@@ -40,6 +137,12 @@ textarea {
   -webkit-user-select: text;
 }
 
+/* Visible focus for keyboard users everywhere. */
+:focus-visible {
+  outline: 2px solid var(--peek-primary-text);
+  outline-offset: 3px;
+}
+
 .pt-safe {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
@@ -49,42 +152,239 @@ textarea {
 
 /* Range inputs tuned for thumbs. */
 input[type="range"] {
-  accent-color: var(--hider);
+  accent-color: var(--peek-accent);
   height: 2rem;
 }
 
-/* MapLibre: dark attribution, hide outline on tap. */
+/* ---------------------------------------------------------------------------
+   Map chrome (MapLibre)
+   --------------------------------------------------------------------------- */
 .maplibregl-ctrl-attrib {
-  background: rgba(0, 0, 0, 0.55) !important;
-  color: #a3a3a3 !important;
+  background: rgb(20 21 27 / 0.7) !important;
+  color: var(--peek-text-secondary) !important;
   font-size: 10px;
 }
 .maplibregl-ctrl-attrib a {
-  color: #d4d4d4 !important;
+  color: var(--peek-text) !important;
 }
+/* Full-screen maps: keep attribution visible but clear of the HUD, banners and
+   bottom sheet — tucked down the right edge under the map buttons. */
 .hs-fullscreen-map .maplibregl-ctrl-top-left {
-  top: calc(max(env(safe-area-inset-top), 0.75rem) + 4.5rem);
+  top: calc(max(env(safe-area-inset-top), 0.75rem) + 12.5rem);
+  left: auto;
+  right: 0.25rem;
 }
 .maplibregl-canvas:focus {
   outline: none;
 }
-
-/* Live map markers */
-.hs-pulse::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 999px;
-  border: 2px solid var(--pulse, #fb7185);
-  animation: hs-pulse 1.4s ease-out infinite;
+.maplibregl-map {
+  background: #242831; /* map-bg while tiles load */
 }
-@keyframes hs-pulse {
+
+/* ---------------------------------------------------------------------------
+   Map markers (DOM elements built in components/map/markers.ts)
+   --------------------------------------------------------------------------- */
+.peek-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.peek-marker__pin {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 3px solid #242831;
+  font: 700 14px/1 var(--font-sans);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
+  transition:
+    opacity 500ms ease,
+    background-color 500ms ease,
+    transform 300ms var(--peek-ease-playful);
+}
+.peek-marker--fresh .peek-marker__pin {
+  background: #b6cd91;
+  color: #22271e;
+}
+.peek-marker--aged .peek-marker__pin {
+  background: #c58f87;
+  color: #22271e;
+  opacity: 0.7;
+}
+.peek-marker--alert .peek-marker__pin {
+  background: #d9bc81;
+  color: #22271e;
+}
+.peek-marker--seeker .peek-marker__pin {
+  background: #8878cb;
+  color: #14151b;
+}
+.peek-marker--hider .peek-marker__pin {
+  background: #c58f87;
+  color: #22271e;
+}
+.peek-marker--muted .peek-marker__pin {
+  background: #4a4b57;
+  color: #f0eee9;
+}
+.peek-marker--arrive .peek-marker__pin {
+  animation: peek-pop 300ms var(--peek-ease-playful) both;
+}
+.peek-marker__label {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #171920;
+  border: 1px solid #353640;
+  color: #f0eee9;
+  font: 600 12px/1.3 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+}
+.peek-marker__label small {
+  color: #a4a3ae;
+  font-weight: 500;
+}
+/* Decorative arrival rings — two runs then gone. Never an accuracy indicator. */
+.peek-marker__ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 2px solid var(--ring, #b6cd91);
+  opacity: 0;
+}
+.peek-marker--arrive .peek-marker__ring {
+  animation: peek-ping-ring 1.8s ease-out 2;
+}
+.peek-marker--arrive .peek-marker__ring + .peek-marker__ring {
+  animation-delay: 0.45s;
+}
+
+/* You: lavender dot with a clear light boundary. */
+.peek-you {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #8878cb;
+  border: 3px solid #f0eee9;
+  box-shadow:
+    0 0 0 5px rgb(136 120 203 / 0.25),
+    0 2px 6px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+}
+.peek-you--warn {
+  background: #dc8d90;
+  box-shadow:
+    0 0 0 5px rgb(220 141 144 / 0.25),
+    0 2px 6px rgb(0 0 0 / 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+   --------------------------------------------------------------------------- */
+@keyframes peek-fade-up {
   from {
-    transform: scale(0.4);
-    opacity: 1;
+    opacity: 0;
+    transform: translateY(12px);
   }
   to {
-    transform: scale(1.6);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes peek-sheet-up {
+  from {
     opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes peek-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes peek-pop {
+  0% {
+    transform: scale(0.85);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes peek-ping-ring {
+  from {
+    transform: scale(0.65);
+    opacity: 0.65;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes peek-caution {
+  0% {
+    color: var(--peek-text);
+  }
+  50% {
+    color: var(--peek-reward);
+  }
+  100% {
+    color: var(--peek-reward);
+  }
+}
+@keyframes peek-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .peek-marker__ring,
+  .peek-confetti {
+    display: none !important;
+  }
+}
+
+@keyframes peek-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
   }
 }

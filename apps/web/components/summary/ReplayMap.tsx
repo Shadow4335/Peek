@@ -5,7 +5,7 @@ import { PING_MIN_RENDER_RADIUS_M, type FenceGeometry, type PingWaveEvent, type 
 import { Marker } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import { COLORS, ensureFenceLayers, feature, setGeoJson } from "@/components/map/layers";
-import { labelElement } from "@/components/map/markers";
+import { initialOf, pingMarkerElement } from "@/components/map/markers";
 import { useMaplibre } from "@/components/map/useMaplibre";
 
 interface Props {
@@ -27,7 +27,7 @@ export default function ReplayMap({ fence, buffered, waves, step, colorOf, nameO
   useEffect(() => {
     if (!map) return;
     ensureFenceLayers(map);
-    setGeoJson(map, "fence", feature(fence, { color: COLORS.hider }));
+    setGeoJson(map, "fence", feature(fence, { color: COLORS.zone }));
     setGeoJson(map, "fence-buffer", feature(buffered));
     if (!map.getLayer("trails")) {
       setGeoJson(map, "trails", null);
@@ -43,13 +43,13 @@ export default function ReplayMap({ fence, buffered, waves, step, colorOf, nameO
         id: "replay-fill",
         type: "fill",
         source: "replay-pings",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.25 },
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.18 },
       });
       map.addLayer({
         id: "replay-line",
         type: "line",
         source: "replay-pings",
-        paint: { "line-color": ["get", "color"], "line-width": 2 },
+        paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-dasharray": [3, 2] },
       });
     }
     const [w, s, e, n] = bbox(feature(buffered) as GeoJSON.Feature<GeoJSON.Polygon>);
@@ -101,7 +101,17 @@ export default function ReplayMap({ fence, buffered, waves, step, colorOf, nameO
       else
         store.set(
           p.playerId,
-          new Marker({ element: labelElement(nameOf(p.playerId), colorOf(p.playerId)) }).setLngLat([p.lng, p.lat]).addTo(map),
+          new Marker({
+            element: pingMarkerElement({
+              initial: initialOf(nameOf(p.playerId)),
+              title: nameOf(p.playerId),
+              detail: "",
+              state: "muted",
+              color: colorOf(p.playerId),
+            }).root,
+          })
+            .setLngLat([p.lng, p.lat])
+            .addTo(map),
         );
     }
     for (const [id, m] of store) {
@@ -122,7 +132,7 @@ export default function ReplayMap({ fence, buffered, waves, step, colorOf, nameO
   }, [map]);
 
   return (
-    <div className="relative h-72 overflow-hidden rounded-3xl ring-1 ring-neutral-800">
+    <div className="relative h-72 overflow-hidden rounded-card ring-1 ring-line">
       <div className="absolute inset-0">
         <div ref={containerRef} className="h-full w-full" data-testid="replay-map" />
       </div>

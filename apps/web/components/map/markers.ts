@@ -1,109 +1,103 @@
-/** DOM elements for MapLibre markers (styled inline so they work outside Tailwind's scan). */
+/**
+ * DOM elements for MapLibre markers. Styling lives in globals.css (.peek-marker*, .peek-you)
+ * so markers share the brand tokens and honour prefers-reduced-motion.
+ */
 
+function el(className: string, label?: string): HTMLDivElement {
+  const d = document.createElement("div");
+  d.className = className;
+  if (label) d.setAttribute("aria-label", label);
+  return d;
+}
+
+/** Zone-builder pin (polygon mode). First pin is lavender so the ring start is obvious. */
 export function vertexElement(label: string, first: boolean): HTMLDivElement {
-  const el = document.createElement("div");
-  el.textContent = label;
-  el.setAttribute("aria-label", `Pin ${label}`);
-  Object.assign(el.style, {
-    width: "30px",
-    height: "30px",
+  const d = el("", `Pin ${label}`);
+  d.textContent = label;
+  Object.assign(d.style, {
+    width: "32px",
+    height: "32px",
     borderRadius: "999px",
     display: "grid",
     placeItems: "center",
-    font: "700 12px ui-sans-serif, system-ui",
-    color: "#000",
-    background: first ? "#a3e635" : "#ffffff",
-    border: "3px solid #000",
-    boxShadow: "0 0 0 2px #a3e635, 0 2px 8px rgba(0,0,0,.6)",
+    font: "700 13px var(--font-sans)",
+    color: first ? "#14151b" : "#22271e",
+    background: first ? "#8878cb" : "#b6cd91",
+    border: "3px solid #242831",
+    boxShadow: "0 2px 8px rgba(0,0,0,.45)",
     touchAction: "none",
   } satisfies Partial<CSSStyleDeclaration>);
-  return el;
+  return d;
 }
 
+/** Quick-circle centre handle. */
 export function centerElement(): HTMLDivElement {
-  const el = document.createElement("div");
-  el.setAttribute("aria-label", "Circle center");
-  Object.assign(el.style, {
-    width: "34px",
-    height: "34px",
+  const d = el("", "Zone centre — drag to move");
+  Object.assign(d.style, {
+    width: "36px",
+    height: "36px",
     borderRadius: "999px",
-    background: "#a3e635",
-    border: "4px solid #000",
-    boxShadow: "0 0 0 2px #a3e635, 0 2px 8px rgba(0,0,0,.6)",
+    background: "#b6cd91",
+    border: "4px solid #242831",
+    boxShadow: "0 0 0 2px rgba(182,205,145,.45), 0 2px 8px rgba(0,0,0,.45)",
     touchAction: "none",
   } satisfies Partial<CSSStyleDeclaration>);
-  return el;
+  return d;
 }
 
+/** You (local player): lavender dot, clear light boundary. */
 export function userDotElement(): HTMLDivElement {
-  const el = document.createElement("div");
-  el.setAttribute("aria-label", "You");
-  Object.assign(el.style, {
-    width: "18px",
-    height: "18px",
-    borderRadius: "999px",
-    background: "#3b82f6",
-    border: "3px solid #fff",
-    boxShadow: "0 0 0 6px rgba(59,130,246,.25)",
-    pointerEvents: "none",
-  } satisfies Partial<CSSStyleDeclaration>);
-  return el;
+  return el("peek-you", "Your position");
 }
 
-/** Small name chip (ping labels). */
-export function labelElement(text: string, color: string, dim = false): HTMLDivElement {
-  const el = document.createElement("div");
-  el.textContent = text;
-  Object.assign(el.style, {
-    padding: "2px 8px",
-    borderRadius: "999px",
-    font: "700 11px ui-sans-serif, system-ui",
-    color: "#000",
-    background: color,
-    opacity: dim ? "0.6" : "1",
-    whiteSpace: "nowrap",
-    transform: "translateY(-18px)",
-    pointerEvents: "none",
-    boxShadow: "0 1px 4px rgba(0,0,0,.5)",
-  } satisfies Partial<CSSStyleDeclaration>);
-  return el;
+export type PingMarkerState = "fresh" | "aged" | "alert" | "seeker" | "hider" | "muted";
+
+export interface PingMarkerHandle {
+  root: HTMLDivElement;
+  update(next: { initial: string; title: string; detail: string; state: PingMarkerState }): void;
 }
 
-/** Pulsing live marker (out-of-bounds hider / exposed seeker). */
-export function pulseElement(label: string, color: string): HTMLDivElement {
-  const wrap = document.createElement("div");
-  wrap.className = "hs-pulse";
-  wrap.style.setProperty("--pulse", color);
-  const dot = document.createElement("div");
-  Object.assign(dot.style, {
-    width: "16px",
-    height: "16px",
-    borderRadius: "999px",
-    background: color,
-    border: "3px solid #000",
-  } satisfies Partial<CSSStyleDeclaration>);
-  const text = labelElement(label, color);
-  Object.assign(text.style, { position: "absolute", left: "50%", top: "-6px", transform: "translate(-50%, -100%)" });
-  wrap.append(dot, text);
-  Object.assign(wrap.style, { position: "relative", pointerEvents: "none" });
-  return wrap;
+/**
+ * Snapshot / player pin: initial in a round pin with a name + time chip above it.
+ * `arrive` plays the one-shot pop + two sage rings (skipped under reduced motion).
+ */
+export function pingMarkerElement(opts: {
+  initial: string;
+  title: string;
+  detail: string;
+  state: PingMarkerState;
+  arrive?: boolean;
+  ringColor?: string;
+  /** Override the pin fill (e.g. per-player replay colours). */
+  color?: string;
+}): PingMarkerHandle {
+  const root = el(`peek-marker peek-marker--${opts.state}${opts.arrive ? " peek-marker--arrive" : ""}`);
+  if (opts.ringColor) root.style.setProperty("--ring", opts.ringColor);
+  const ring1 = el("peek-marker__ring");
+  const ring2 = el("peek-marker__ring");
+  const pin = el("peek-marker__pin");
+  const label = el("peek-marker__label");
+  const title = document.createElement("span");
+  const detail = document.createElement("small");
+  label.append(title, document.createTextNode(" "), detail);
+  root.append(ring1, ring2, pin, label);
+  if (opts.color) pin.style.background = opts.color;
+
+  const update: PingMarkerHandle["update"] = (n) => {
+    pin.textContent = n.initial;
+    title.textContent = n.title;
+    detail.textContent = n.detail;
+    root.setAttribute("aria-label", `${n.title} ${n.detail}`.trim());
+    for (const s of ["fresh", "aged", "alert", "seeker", "hider", "muted"]) {
+      root.classList.toggle(`peek-marker--${s}`, s === n.state);
+    }
+  };
+  update(opts);
+  if (opts.arrive) {
+    // Rings run twice then the marker becomes static (no infinite pulsing).
+    window.setTimeout(() => root.classList.remove("peek-marker--arrive"), 3200);
+  }
+  return { root, update };
 }
 
-/** Solid dot with a name chip above it (admin map). */
-export function dotLabelElement(label: string, color: string, ring?: string): HTMLDivElement {
-  const wrap = document.createElement("div");
-  Object.assign(wrap.style, { position: "relative", pointerEvents: "none" } satisfies Partial<CSSStyleDeclaration>);
-  const dot = document.createElement("div");
-  Object.assign(dot.style, {
-    width: "18px",
-    height: "18px",
-    borderRadius: "999px",
-    background: color,
-    border: "3px solid #000",
-    boxShadow: ring ? `0 0 0 3px ${ring}` : "0 1px 4px rgba(0,0,0,.6)",
-  } satisfies Partial<CSSStyleDeclaration>);
-  const text = labelElement(label, color);
-  Object.assign(text.style, { position: "absolute", left: "50%", top: "-4px", transform: "translate(-50%, -100%)" });
-  wrap.append(dot, text);
-  return wrap;
-}
+export const initialOf = (name: string) => (name.trim()[0] ?? "?").toUpperCase();

@@ -1,6 +1,8 @@
-# IRL Hide & Seek — Project Context
+# Peek! — Project Context
 
-Mobile-only PWA for real-world hide and seek. This file is the persistent source of truth
+Peek! — a mobile-only PWA for real-world hide and seek. The product name is **Peek!** everywhere
+users can see it; internal identifiers (`@hideseek/*` packages, `hideseek:*` storage keys,
+`hideseek-server` on Render) intentionally keep the old slug. This file is the persistent source of truth
 across build phases. **Update the Phase Checklist at the end of every phase.**
 
 ## Execution Protocol
@@ -148,7 +150,8 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
   hard-code game numbers in apps.
 - Server env validated with zod at boot. Server passes `ws` as the Supabase Realtime transport
   (Node < 22 has no global WebSocket). Use Node 22 (`.nvmrc`); Node 20 is EOL. Web only uses `NEXT_PUBLIC_*` vars.
-- Maps: MapLibre GL (no token needed; style URL via `NEXT_PUBLIC_MAP_STYLE_URL`).
+- Maps: MapLibre GL (no token needed; style URL via `NEXT_PUBLIC_MAP_STYLE_URL`, default OpenFreeMap `dark`,
+  recoloured at runtime by `components/map/mapTheme.ts`).
 - Next.js 16 has breaking changes vs older versions — read `apps/web/node_modules/next/dist/docs/`
   before writing Next-specific code (see `apps/web/AGENTS.md`).
 - Commands (from root): `npm run typecheck`, `npm run lint`, `npm test`, `npm run dev:web`,
@@ -346,6 +349,36 @@ lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
 - **Rematch:** summary → "Rematch — same zone & rules" (`create_rematch`); others see
   "Join rematch · CODE" via Realtime on `rooms.rematch_code`. Your previous side is re-claimed
   automatically (`carryRoleInto` / `takeCarriedRole`, sessionStorage).
+
+---
+
+## Visual identity — Peek! "Midnight Playground"
+
+- **Tokens:** `app/globals.css` defines `--peek-*` CSS variables and maps them into Tailwind v4 via
+  `@theme`: `bg`, `surface`, `surface-raised`, `surface-hover`, `line`, `primary` (lavender — you,
+  seekers, selection), `accent` (sage — CTA, ready, fresh ping, play zone), `hider` (coral — hiders,
+  aged pings), `seeker` (= lavender), `reward` (amber — alerts, trophies), `danger` (errors/destructive
+  only), `ink` / `ink-2` / `ink-3` text, `on-accent` / `on-primary`; radii `rounded-button` 12 /
+  `rounded-card` 20 / `rounded-panel` 24; `shadow-panel`; `animate-enter|sheet|reveal|pop|caution`.
+  **Never use raw Tailwind palette classes or hex in components** — map/marker code reads the same
+  values from `COLORS` in `components/map/layers.ts`.
+- **Type:** Fredoka (display, `h1–h3`, `.font-display`) + Poppins (body) via `next/font/google`
+  (self-hosted at build). Timers/scores use `.peek-timer` (Fredoka, tabular numbers).
+- **Primitives:** `ui/Button` (primary sage / secondary / ghost / danger / selected; 0.97 press,
+  ≤2 px hover lift), `ui/Badge` (waiting / active / hider / seeker / warning / danger / neutral, always
+  labelled), `ui/Card` (`Card`, `SheetGrabber`, `SHEET_CLASS`), `ui/Field` (+ `INPUT_CLASS`),
+  `ui/Mascot`, `ui/Confetti` (one-shot < 900 ms), `ui/Notice`, `ui/SlideToConfirm`.
+- **Map:** `applyPeekMapTheme` recolours background/water/park/building/road/label layers of any
+  OpenMapTiles-schema style on load. Markers (`map/markers.ts`, styles `.peek-marker*` / `.peek-you`):
+  you = lavender dot; latest-wave snapshot pin = sage "fresh" (< 60 s since **capture**, i.e.
+  `heartbeatAt`) or dimmed coral "aged", always with a "x s ago / last seen" label; OOB hider = amber;
+  exposed seeker = lavender. Pins pop + two sage rings **only when a new wave arrives** (history loaded
+  on mount appears silently); labels update in place each second. Dashed circles = real GPS accuracy.
+- **Copy:** "Ready to disappear?", "Your squad / Waiting for friends…", role reveals "Super Seeker"
+  / "Sneaky Hider", "Bea was spotted!", "Positions may have changed since the last ping.", "Game over.
+  Nice hiding!". Never say "live" for snapshot data.
+- **Motion:** global `prefers-reduced-motion` rule disables rings/confetti and shortens all motion.
+- The stealth overlay intentionally stays pure `#000` (OLED) and is excluded from theming.
 
 ---
 

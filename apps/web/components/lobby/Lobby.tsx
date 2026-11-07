@@ -12,13 +12,14 @@ import { cleanName, NAME_MAX } from "@/lib/player";
 import { useGeolocation, type TimedFix } from "@/lib/useGeolocation";
 import { useReadyGuard } from "@/lib/useReadyGuard";
 import { assessZone } from "@/lib/zone";
+import { Badge } from "@/components/ui/Badge";
 import { GpsBadge } from "./GpsBadge";
 import { InviteQr } from "./InviteQr";
 import { RosterColumn } from "./RosterColumn";
 
 const ZoneMiniMap = dynamic(() => import("./ZoneMiniMap"), {
   ssr: false,
-  loading: () => <div className="h-40 animate-pulse rounded-3xl bg-neutral-950 ring-1 ring-neutral-800" />,
+  loading: () => <div className="h-40 animate-pulse rounded-card bg-surface ring-1 ring-line" />,
 });
 
 type ActionResult = Promise<string | null>;
@@ -111,7 +112,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
     const url = `${window.location.origin}/room/${room.code}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Join my Hide & Seek game", text: `Room ${room.code}`, url });
+        await navigator.share({ title: "Join my Peek! game", text: `Room ${room.code}`, url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -151,8 +152,8 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             onClick={onLeave}
             disabled={busy}
             aria-label="Leave room"
-            className={`flex h-11 items-center gap-1.5 rounded-full px-3 text-sm ring-1 ${
-              confirmLeave ? "bg-seeker text-black ring-seeker" : "bg-neutral-950 text-neutral-300 ring-neutral-800"
+            className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm ring-1 transition-transform active:scale-[.97] ${
+              confirmLeave ? "bg-danger text-on-primary ring-danger" : "bg-surface text-ink ring-line"
             }`}
           >
             <LogOut className="size-4" aria-hidden />
@@ -162,40 +163,49 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             type="button"
             onClick={share}
             data-testid="room-code"
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-neutral-950 font-mono text-xl font-black tracking-[0.3em] text-hider ring-1 ring-neutral-800"
+            aria-label={`Room code ${room.code}. Tap to share the invite link`}
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-surface font-mono text-xl font-bold tracking-[0.3em] text-primary-text ring-1 ring-line transition-transform active:scale-[.97]"
           >
             {room.code}
             {copied ? (
-              <Check className="size-4 text-neutral-300" aria-label="Copied" />
+              <Check className="size-4 text-ink" aria-label="Copied" />
             ) : typeof navigator !== "undefined" && "share" in navigator ? (
-              <Share2 className="size-4 text-neutral-400" aria-label="Share" />
+              <Share2 className="size-4 text-ink-2" aria-label="Share" />
             ) : (
-              <Copy className="size-4 text-neutral-400" aria-label="Copy link" />
+              <Copy className="size-4 text-ink-2" aria-label="Copy link" />
             )}
           </button>
           <button
             type="button"
             onClick={() => setShowQr(true)}
             aria-label="Show invite QR code"
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-neutral-950 text-neutral-300 ring-1 ring-neutral-800"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-surface text-ink ring-1 ring-line"
           >
             <QrCode className="size-5" />
           </button>
-          <span className="flex h-11 items-center gap-1 rounded-full bg-neutral-950 px-3 text-sm text-neutral-300 ring-1 ring-neutral-800">
+          <span className="flex h-11 items-center gap-1 rounded-full bg-surface px-3 text-sm text-ink ring-1 ring-line">
             <Users className="size-4" aria-hidden />
             {players.length}/{room.max_players}
           </span>
         </header>
 
-        <p className="flex flex-wrap items-center gap-x-2 text-xs text-neutral-500">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-[28px] leading-tight">Your squad</h1>
+          <Badge tone="waiting" dot>
+            Waiting for friends…
+          </Badge>
+        </div>
+
+        <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-2">
           <span>{formatDuration(room.game_duration_mins * 60)} match</span>·
           <span>{formatDuration(room.head_start_secs)} head start</span>·
           <span>
             ping {formatDuration(room.ping_interval_min_secs)}–{formatDuration(room.ping_interval_max_secs)}
           </span>
           ·<span>{formatArea(room.geofence_area_m2)}</span>
-          <span className="ml-auto flex items-center gap-1" title={connected ? "Game server connected" : "Game server offline"}>
-            {connected ? <Wifi className="size-3.5 text-hider" /> : <WifiOff className="size-3.5 text-warn" />}
+          <span className="ml-auto flex items-center gap-1" role="status">
+            {connected ? <Wifi className="size-3.5 text-accent" aria-hidden /> : <WifiOff className="size-3.5 text-reward" aria-hidden />}
+            <span className={connected ? "sr-only" : "text-reward"}>{connected ? "Connected" : "Reconnecting…"}</span>
           </span>
         </p>
 
@@ -215,16 +225,16 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
                 value={editingName}
                 onChange={(e) => setEditingName(cleanName(e.target.value))}
                 onBlur={() => void saveName()}
-                className="h-11 min-w-0 flex-1 rounded-xl bg-neutral-900 px-3 ring-1 ring-inset ring-neutral-700 outline-none focus:ring-2 focus:ring-hider"
+                className="h-11 min-w-0 flex-1 rounded-xl bg-surface-raised px-3 ring-1 ring-inset ring-line outline-none focus:ring-2 focus:ring-primary-text"
               />
             </form>
           ) : (
             <button
               type="button"
               onClick={() => setEditingName(me.display_name)}
-              className="flex items-center gap-2 self-start text-sm text-neutral-400"
+              className="flex items-center gap-2 self-start text-sm text-ink-2"
             >
-              Playing as <span className="font-semibold text-white">{me.display_name}</span>
+              Playing as <span className="font-semibold text-ink">{me.display_name}</span>
               <Pencil className="size-3.5" aria-label="Edit name" />
             </button>
           )
@@ -238,9 +248,9 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
           <section
             aria-label="Unassigned"
             data-testid="column-UNASSIGNED"
-            className="flex flex-col gap-2 rounded-3xl bg-neutral-950 p-3 ring-1 ring-neutral-800"
+            className="flex flex-col gap-2 rounded-card bg-surface p-3 ring-1 ring-line"
           >
-            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+            <h2 className="text-base text-ink-2">
               Unassigned · {roster.unassigned.length}
             </h2>
             <ul className="flex flex-wrap gap-1.5">
@@ -248,7 +258,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
                 <li
                   key={p.id}
                   className={`rounded-full px-3 py-1 text-sm ${
-                    p.id === me?.id ? "bg-white text-black" : "bg-neutral-900 text-neutral-300"
+                    p.id === me?.id ? "bg-primary-soft text-primary-text ring-1 ring-primary/40" : "bg-surface-raised text-ink"
                   }`}
                 >
                   {p.display_name}
@@ -285,7 +295,7 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
             type="button"
             disabled={busy}
             onClick={() => act(() => claim("UNASSIGNED"))}
-            className="self-center text-xs text-neutral-500 underline underline-offset-4"
+            className="self-center text-xs text-ink-3 underline underline-offset-4"
           >
             Leave my side
           </button>
@@ -293,12 +303,12 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
       </div>
 
       {/* Action bar */}
-      <footer className="pb-safe flex flex-col gap-2 border-t border-neutral-900 bg-black px-4 pt-3">
+      <footer className="pb-safe flex flex-col gap-2 border-t border-line bg-bg px-4 pt-3">
         <ErrorNotice>{error}</ErrorNotice>
 
         {me?.is_ready ? (
           <Button variant="secondary" block disabled={busy} onClick={() => act(() => setReady(false))}>
-            <Check className="size-5 text-hider" aria-hidden /> Ready — tap to cancel
+            <Check className="size-5 text-accent" aria-hidden /> Ready — tap to cancel
           </Button>
         ) : (
           <Button block disabled={busy || readyBlocker !== null} onClick={() => act(() => setReady(true, fix))}>
@@ -325,13 +335,13 @@ export function Lobby({ room, players, me, connected, claim, setReady, start, le
               </Button>
             ) : null}
             {!roster.canForce ? (
-              <p className="text-center text-xs text-neutral-500">
+              <p className="text-center text-xs text-ink-3">
                 Need at least one ready Hider and one ready Seeker to start.
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="text-center text-xs text-neutral-500">Waiting for the host to start…</p>
+          <p className="text-center text-sm text-ink-2">Waiting for the host to start…</p>
         )}
       </footer>
       {showQr ? <InviteQr code={room.code} onClose={() => setShowQr(false)} /> : null}

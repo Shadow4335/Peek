@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AdminConsole } from "@/components/admin/AdminConsole";
 
 export const metadata: Metadata = {
-  title: "Referee console · Hide & Seek",
+  title: "Referee console · Peek!",
   robots: { index: false, follow: false },
 };
 

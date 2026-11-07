@@ -6,18 +6,20 @@ import { Maximize } from "lucide-react";
 import { Marker, type Map as MlMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import { COLORS, ensureFenceLayers, feature, setGeoJson } from "@/components/map/layers";
-import { dotLabelElement } from "@/components/map/markers";
+import { initialOf, pingMarkerElement, type PingMarkerState } from "@/components/map/markers";
 import { syncMarkers } from "@/components/map/syncMarkers";
 import { useMaplibre } from "@/components/map/useMaplibre";
 
 export interface AdminMapPoint {
   id: string;
   label: string;
+  /** e.g. "fix 4 s ago". */
+  detail: string;
   lat: number;
   lng: number;
   accuracy_m: number;
   color: string;
-  ring?: string;
+  state: PingMarkerState;
 }
 
 function fit(map: MlMap, detail: AdminRoomDetail, animate: boolean) {
@@ -47,7 +49,7 @@ export default function AdminMap({ detail, points }: { detail: AdminRoomDetail; 
         id: "acc-fill",
         type: "fill",
         source: "acc",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.15 },
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.14 },
       });
       map.addLayer({
         id: "acc-line",
@@ -56,7 +58,7 @@ export default function AdminMap({ detail, points }: { detail: AdminRoomDetail; 
         paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-opacity": 0.8 },
       });
     }
-    setGeoJson(map, "fence", feature(detail.room.geofence, { color: COLORS.hider }));
+    setGeoJson(map, "fence", feature(detail.room.geofence, { color: COLORS.zone }));
     setGeoJson(map, "fence-buffer", feature(detail.room.geofence_buffered));
     if (fittedFor.current !== roomId) {
       fittedFor.current = roomId;
@@ -85,8 +87,8 @@ export default function AdminMap({ detail, points }: { detail: AdminRoomDetail; 
       map,
       store.current,
       points,
-      (p) => `${p.label}|${p.color}|${p.ring ?? ""}`,
-      (p) => dotLabelElement(p.label, p.color, p.ring),
+      (p) => `${p.label}|${p.detail}|${p.state}`,
+      (p) => pingMarkerElement({ initial: initialOf(p.label), title: p.label, detail: p.detail, state: p.state }).root,
     );
   }, [map, points]);
 
@@ -100,7 +102,7 @@ export default function AdminMap({ detail, points }: { detail: AdminRoomDetail; 
   }, [map]);
 
   return (
-    <div className="hs-admin-map relative h-full min-h-80 overflow-hidden rounded-3xl ring-1 ring-neutral-800">
+    <div className="hs-admin-map relative h-full min-h-80 overflow-hidden rounded-card ring-1 ring-line">
       <div className="absolute inset-0">
         <div ref={containerRef} className="h-full w-full" data-testid="admin-map" />
       </div>
@@ -108,7 +110,7 @@ export default function AdminMap({ detail, points }: { detail: AdminRoomDetail; 
         type="button"
         aria-label="Fit zone"
         onClick={() => map && fit(map, detail, true)}
-        className="absolute top-3 right-3 grid size-12 place-items-center rounded-full bg-black/80 ring-1 ring-neutral-700"
+        className="absolute top-3 right-3 grid size-12 place-items-center rounded-full bg-surface/90 text-ink ring-1 ring-line backdrop-blur"
       >
         <Maximize className="size-5" />
       </button>

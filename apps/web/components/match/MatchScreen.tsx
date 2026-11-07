@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayerRow, RoomRow } from "@hideseek/shared";
+import { useCallback, useMemo } from "react";
 import type { GameSocket } from "@/lib/socket";
 import { useGeolocation } from "@/lib/useGeolocation";
 import { useHiderTelemetry, useSeekerBeacon } from "@/lib/useHiderTelemetry";
@@ -31,7 +32,9 @@ export function MatchScreen({ room, me, players, socket, refresh, loadPingHistor
 
   const { fix } = useGeolocation(live);
   const now = useNow(live ? 500 : 5000);
-  const match = useMatch(socket, room, me, refresh);
+  const names = useMemo(() => new Map(players.map((p) => [p.id, p.display_name])), [players]);
+  const nameOf = useCallback((id: string) => names.get(id), [names]);
+  const match = useMatch(socket, room, me, refresh, { nameOf, announcePings: !isHider });
   const { held } = useWakeLock(live);
   useHiderTelemetry(socket, live && isHider, fix);
   useSeekerBeacon(socket, room.status === "ACTIVE" && isSeeker, fix);

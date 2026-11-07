@@ -77,21 +77,21 @@ function Dashboard() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 md:p-6" style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}>
       <header className="flex items-center gap-3">
-        <ShieldCheck className="size-6 text-warn" aria-hidden />
-        <h1 className="text-xl font-black">Referee console</h1>
-        <span className="text-sm text-neutral-500">{rooms.filter((r) => r.status !== "ENDED").length} open</span>
+        <ShieldCheck className="size-6 text-reward" aria-hidden />
+        <h1 className="text-xl font-bold">Referee console</h1>
+        <span className="text-sm text-ink-3">{rooms.filter((r) => r.status !== "ENDED").length} open</span>
         <button
           type="button"
           onClick={() => setTick((t) => t + 1)}
           aria-label="Refresh"
-          className="ml-auto grid size-11 place-items-center rounded-xl bg-neutral-900 ring-1 ring-neutral-700"
+          className="ml-auto grid size-11 place-items-center rounded-xl bg-surface-raised ring-1 ring-line"
         >
           <RefreshCw className="size-5" />
         </button>
         <button
           type="button"
           onClick={() => adminToken.set(null)}
-          className="flex min-h-11 items-center gap-2 rounded-xl bg-neutral-900 px-4 text-sm font-semibold ring-1 ring-neutral-700"
+          className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-raised px-4 text-sm font-semibold ring-1 ring-line"
         >
           <LogOut className="size-4" aria-hidden /> Sign out
         </button>
@@ -104,7 +104,7 @@ function Dashboard() {
         {shownDetail ? (
           <RoomDetail detail={shownDetail} now={now} onChanged={() => setTick((t) => t + 1)} />
         ) : (
-          <div className="grid place-items-center rounded-3xl border border-dashed border-neutral-800 text-neutral-500">
+          <div className="grid place-items-center rounded-card border border-dashed border-line text-ink-3">
             {selected ? "Loading room…" : "Select a room"}
           </div>
         )}
