@@ -1,7 +1,7 @@
 "use client";
 
 import { ROOM_CODE_LENGTH } from "@hideseek/shared";
-import { ArrowRight, Dices, LogIn, MapPinned } from "lucide-react";
+import { ArrowRight, Dices, LogIn, MapPinned, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
@@ -72,11 +72,21 @@ export default function Home() {
 
   return (
     <main className="pt-safe pb-safe mx-auto flex w-full max-w-md flex-1 flex-col gap-5 overflow-y-auto bg-[radial-gradient(ellipse_at_top,#252330,transparent_55%)] px-5">
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center gap-3 pt-2">
         <span className="font-display text-2xl font-bold tracking-tight">
           Peek<span className="text-accent">!</span>
         </span>
         <span className="text-xs text-ink-2">Hide well. Seek better.</span>
+        {/* Referee console — the password is checked by the game server on /admin. */}
+        <Link
+          href="/admin"
+          aria-label="Admin panel (password required)"
+          title="Admin panel"
+          data-testid="admin-entry"
+          className="ml-auto grid size-11 shrink-0 place-items-center rounded-full bg-surface text-ink-2 ring-1 ring-line transition-[transform,color] duration-150 hover:text-reward active:scale-[.97]"
+        >
+          <ShieldCheck className="size-5" aria-hidden />
+        </Link>
       </div>
 
       <header className="flex animate-enter items-center gap-4 pt-4">

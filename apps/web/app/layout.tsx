@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Poppins } from "next/font/google";
+import Script from "next/script";
+import { INTRO_GATE_SCRIPT, IntroOverlay } from "@/components/IntroOverlay";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -32,8 +34,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${fredoka.variable} ${poppins.variable} h-full antialiased`}>
+    // suppressHydrationWarning: the intro gate script may add data-intro before hydration.
+    <html lang="en" className={`${fredoka.variable} ${poppins.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex h-full flex-col bg-bg text-ink">
+        <Script id="peek-intro-gate" strategy="beforeInteractive">
+          {INTRO_GATE_SCRIPT}
+        </Script>
+        <IntroOverlay />
         <Providers>{children}</Providers>
       </body>
     </html>

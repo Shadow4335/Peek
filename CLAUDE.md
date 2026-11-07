@@ -378,7 +378,17 @@ lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
   / "Sneaky Hider", "Bea was spotted!", "Positions may have changed since the last ping.", "Game over.
   Nice hiding!". Never say "live" for snapshot data.
 - **Motion:** global `prefers-reduced-motion` rule disables rings/confetti and shortens all motion.
+- **Press feedback:** `lib/pressFeedback.ts` (installed once in `app/providers.tsx`) plays a 260 ms
+  squash-and-settle on the CSS `scale` property via the Web Animations API for every enabled button,
+  link, `role=button|tab`, on pointer or Enter/Space. It never edits classes, so it composes with
+  Tailwind transitions and entrance animations. Opt an element out with `data-no-press`.
 - The stealth overlay intentionally stays pure `#000` (OLED) and is excluded from theming.
+- **First-visit intro:** `components/IntroOverlay.tsx` (~2.6 s: mascot peeks over a hill, glances and
+  blinks, wordmark pops in). A `beforeInteractive` inline script in `app/layout.tsx` sets
+  `html[data-intro="1"]` before first paint when `localStorage["hideseek:introSeen"]` is unset, so
+  the page never flashes underneath; `/admin` and `/dev` are skipped; `?intro=1` forces a replay.
+  Tap anywhere or "Skip" dismisses; reduced motion shows a still frame for 1.2 s. `<html>` has
+  `suppressHydrationWarning` because of that attribute.
 
 ---
 

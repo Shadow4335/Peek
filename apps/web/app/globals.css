@@ -388,3 +388,132 @@ input[type="range"] {
     transform: translateY(-8px);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   First-visit intro (components/IntroOverlay.tsx). Hidden unless the head
+   script set html[data-intro="1"] before first paint.
+   --------------------------------------------------------------------------- */
+.peek-intro {
+  display: none;
+}
+html[data-intro="1"] {
+  overflow: hidden;
+}
+html[data-intro="1"] .peek-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: radial-gradient(ellipse at 50% 40%, #252330, #14151b 65%);
+  color: var(--peek-text);
+  cursor: pointer;
+  transition: opacity 320ms var(--peek-ease-smooth);
+}
+.peek-intro--leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+.peek-intro__skip {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 12px);
+  right: 16px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--peek-surface);
+  border: 1px solid var(--peek-border);
+  color: var(--peek-text-secondary);
+  font: 600 14px/1 var(--font-sans);
+}
+.peek-intro__stage {
+  position: relative;
+  width: 200px;
+  height: 150px;
+  overflow: hidden; /* the hill hides the mascot's lower half */
+}
+.peek-intro__mascot {
+  position: absolute;
+  left: 50%;
+  bottom: -14px; /* eyes clear the hilltop, mouth tucks behind it */
+  translate: -50% 110%;
+  animation: peek-intro-rise 650ms var(--peek-ease-playful) 150ms forwards;
+}
+.peek-intro__hill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -70px;
+  height: 120px;
+  border-radius: 50%;
+  background: #202129;
+  box-shadow: inset 0 2px 0 #353640;
+}
+.peek-intro__pupils {
+  animation: peek-intro-look 900ms ease-in-out 700ms both;
+}
+.peek-intro__eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: peek-intro-blink 160ms ease-in-out 1550ms both;
+}
+.peek-intro__word {
+  display: flex;
+  margin-top: 4px;
+  font: 700 56px/1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.peek-intro__word span {
+  display: inline-block;
+  opacity: 0;
+  translate: 0 14px;
+  scale: 0.8;
+  animation: peek-intro-letter 420ms var(--peek-ease-playful) forwards;
+}
+.peek-intro__bang {
+  color: var(--peek-accent);
+}
+.peek-intro__tag {
+  opacity: 0;
+  color: var(--peek-text-secondary);
+  font: 500 15px/1.4 var(--font-sans);
+  animation: peek-fade-up 450ms var(--peek-ease-smooth) 1600ms forwards;
+}
+@keyframes peek-intro-rise {
+  to {
+    translate: -50% 0;
+  }
+}
+@keyframes peek-intro-look {
+  0% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-4px);
+  }
+  65% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes peek-intro-blink {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes peek-intro-letter {
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorNotice } from "@/components/ui/Notice";
@@ -48,6 +49,12 @@ export function LoginCard() {
       <Button type="submit" block loading={busy} disabled={!password}>
         Sign in
       </Button>
+      <Link
+        href="/"
+        className="mx-auto flex min-h-11 items-center gap-1.5 text-sm text-ink-2 transition-colors hover:text-ink"
+      >
+        <ArrowLeft className="size-4" aria-hidden /> Back to Peek!
+      </Link>
     </form>
   );
 }
