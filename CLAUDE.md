@@ -123,7 +123,8 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
 
 - Earth radius `R = 6 371 008.8 m` (matches Turf).
 - **Haversine**: `a = sin²(Δφ/2) + cos φ1 · cos φ2 · sin²(Δλ/2)`, `d_raw = 2R · atan2(√a, √(1−a))`.
-- **Accuracy discount**: `d_discount = min(σ_seeker + σ_hider, 20.0 m)` (σ clamped ≥ 0).
+- **Accuracy discount**: `d_discount = min(σ_seeker + σ_hider, 5.0856 m)` (σ clamped ≥ 0; migration 0005 —
+  caps the tag range at 6 m raw distance, was 20 m).
 - **Effective distance**: `d_effective = max(0, d_raw − d_discount)`.
 - **Tag succeeds** iff `d_effective ≤ 0.9144 m` (3 ft; migration 0004 — was 15 m).
 - **Fresh-fix required** (server emits `FORCE_GPS_FLUSH`, waits 2 s, retries once) iff

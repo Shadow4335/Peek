@@ -110,7 +110,7 @@ describe("Option C tagging", () => {
     heartbeat(hider.sock, at(0));
     await sleep(50);
 
-    // 35 m raw − 10 m discount = 25 m effective → borderline → flush → still out of range.
+    // 35 m raw − 5.09 m discount ≈ 30 m effective → borderline → flush → still out of range.
     const r1 = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hider.id, seeker: at(35) });
     expect(flush.count).toBe(1);
     expect(Object.keys(r1).sort()).toEqual(["cooldownUntil", "result", "tagRequestEligible"]);
@@ -150,12 +150,21 @@ describe("Option C tagging", () => {
     expect(store.rooms.get(room.id)!.winner).toBe("SEEKERS");
   });
 
-  it("3 ft radius after the 20 m discount cap: ±15 m fixes tag at 20.5 m raw (eff 0.5 m)", async () => {
+  it("GPS allowance is capped: ±15 m fixes tag at 5.9 m raw", async () => {
     const { seeker, hiders } = await activeRoom(2);
     heartbeat(hiders[0]!.sock, at(0, 15));
     await sleep(50);
-    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(20.5, 15) });
+    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(5.9, 15) });
     expect(r.result).toBe("TAGGED");
+  });
+
+  it("GPS allowance is capped: ±15 m fixes miss at 6.5 m raw", async () => {
+    const { seeker, hiders } = await activeRoom(2);
+    autoFlush(hiders[0]!.sock, () => at(0, 15));
+    heartbeat(hiders[0]!.sock, at(0, 15));
+    await sleep(50);
+    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(6.5, 15) });
+    expect(r.result).toBe("OUT_OF_RANGE");
   });
 
   it("3 ft radius: exact fixes 2 m apart miss", async () => {
@@ -169,7 +178,7 @@ describe("Option C tagging", () => {
 
   it("hider that ignores FORCE_GPS_FLUSH costs ~2 s max, then is judged on old data", async () => {
     const { seeker, hiders } = await activeRoom();
-    heartbeat(hiders[0]!.sock, at(25)); // vs seeker at −5 m: 30 m raw − 10 m = 20 m → borderline
+    heartbeat(hiders[0]!.sock, at(25)); // vs seeker at −5 m: 30 m raw − 5.09 m ≈ 25 m → borderline
     await sleep(50);
     const started = Date.now();
     const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(-5) });

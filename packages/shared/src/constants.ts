@@ -36,9 +36,11 @@ export const PING_VISIBLE_MS = 15_000;
 export const PING_HISTORY_OPACITY = [1, 0.5, 0.2] as const;
 
 // Tagging (Option C)
-export const TAG_MAX_ACCURACY_DISCOUNT_M = 20;
 /** 3 ft. Applied to d_effective (after the GPS accuracy discount). */
 export const TAG_SUCCESS_THRESHOLD_M = 0.9144;
+/** Max GPS-drift allowance, so a tag never lands beyond 6 m of raw distance (migration 0005). */
+export const TAG_MAX_RAW_RANGE_M = 6;
+export const TAG_MAX_ACCURACY_DISCOUNT_M = TAG_MAX_RAW_RANGE_M - TAG_SUCCESS_THRESHOLD_M;
 export const TAG_BORDERLINE_MAX_M = 40;
 export const TAG_FRESH_FIX_MAX_AGE_MS = 10_000;
 export const TAG_FRESH_FIX_TIMEOUT_MS = 2_000;

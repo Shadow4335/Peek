@@ -148,14 +148,15 @@ ok(r.result === "OUT_OF_RANGE" && r.exposure_triggered === true, "2 strikes in 6
 const [exp] = await as("service", `select exposed_until > now() + interval '25 seconds' as e from players where id = $1`, [pb.id]);
 ok(exp.e, "exposed_until ≈ now + 30s");
 await as("service", `update players set last_failed_tag_at = null where id = $1`, [pb.id]);
-// 0004: 3 ft radius. raw 22, disc capped 20 (15+15), eff 2 m → miss (fresh fix already attempted)
+// 0004/0005: 3 ft after a discount capped at 5.0856 m ⇒ 6 m raw max.
+// raw 6.5 with ±15 m fixes: disc capped 5.0856, eff ≈ 1.41 m → miss (fresh fix already attempted)
 await as("service", `update hider_telemetry set accuracy_m = 15`);
-r = await tag(22, 15, true);
-ok(r.result === "OUT_OF_RANGE", "eff 2m > 3 ft → OUT_OF_RANGE");
+r = await tag(6.5, 15, true);
+ok(r.result === "OUT_OF_RANGE", "raw 6.5m with big σ → OUT_OF_RANGE (6 m cap)");
 await as("service", `update players set last_failed_tag_at = null where id = $1`, [pb.id]);
-// raw 20.5, disc capped 20, eff 0.5 m ≤ 0.9144 m → success
-r = await tag(20.5, 15);
-ok(r.result === "TAGGED" && r.match_ended === true && r.winner === "SEEKERS", "eff 0.5m (20m capped discount) → TAGGED, last hider → SEEKERS win");
+// raw 5.9, disc capped 5.0856, eff ≈ 0.81 m ≤ 0.9144 m → success
+r = await tag(5.9, 15);
+ok(r.result === "TAGGED" && r.match_ended === true && r.winner === "SEEKERS", "raw 5.9m (capped discount) → TAGGED, last hider → SEEKERS win");
 const [endRoom] = await as("service", `select status, winner from rooms where id = $1`, [R]);
 ok(endRoom.status === "ENDED" && endRoom.winner === "SEEKERS", "room ENDED");
 const [cnt] = await as("service", `select catches_count from players where id = $1`, [pb.id]);
