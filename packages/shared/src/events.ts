@@ -46,12 +46,6 @@ export interface PingWaveEvent {
   pings: Array<GeoFix & { playerId: string; stale: boolean; heartbeatAt: string }>;
 }
 
-export interface SeekerExposureEvent {
-  seekerPlayerId: string;
-  location: GeoFix | null;
-  until: string;
-}
-
 export interface OutOfBoundsEvent {
   playerId: string;
   since: string;
@@ -86,8 +80,6 @@ export interface TagRequestResolvedEvent {
 export interface RoomStateEvent {
   status: RoomStatusEvent;
   you: { playerId: string; role: PlayerRole; caught: boolean };
-  /** Hiders: every exposed seeker. Seekers: only their own exposure. */
-  exposedSeekers: SeekerExposureEvent[];
   /** Seekers only. */
   outOfBoundsHiders: OutOfBoundsEvent[];
   /** Hider only: a tag request awaiting their answer. */
@@ -124,8 +116,6 @@ export interface ServerToClientEvents {
   "hider:out_of_bounds": (p: OutOfBoundsEvent) => void;
   "hider:back_in_bounds": (p: { playerId: string }) => void;
   "hider:caught": (p: HiderCaughtEvent) => void;
-  /** To all hiders + the exposed seeker. */
-  "seeker:exposed": (p: SeekerExposureEvent) => void;
   "tag_request:incoming": (p: TagRequestIncomingEvent) => void;
   "tag_request:resolved": (p: TagRequestResolvedEvent) => void;
 }

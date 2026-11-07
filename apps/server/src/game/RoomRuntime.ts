@@ -11,7 +11,6 @@ import {
   type RoomRow,
   type RoomStateEvent,
   type RoomStatusEvent,
-  type SeekerExposureEvent,
   type TagAttemptPayload,
   type TagAttemptResponse,
   type TagRequestIncomingEvent,
@@ -159,17 +158,10 @@ export class RoomRuntime {
   snapshotFor(playerId: string): RoomStateEvent {
     const p = this.players.get(playerId);
     const role = p?.role ?? "UNASSIGNED";
-    const now = Date.now();
     const pending = [...this.tagRequests.values()].find((r) => r.hiderId === playerId);
     return {
       status: this.statusEvent(),
       you: { playerId, role, caught: Boolean(p?.caught_at) },
-      exposedSeekers:
-        role === "HIDER" || role === "SEEKER"
-          ? [...this.exposures]
-              .filter(([seekerId, until]) => until > now && (role === "HIDER" || seekerId === playerId))
-              .map(([seekerId, until]) => this.exposureEvent(seekerId, until))
-          : [],
       outOfBoundsHiders:
         role === "SEEKER" && this.room.status === "ACTIVE"
           ? [...this.outOfBounds]
@@ -461,7 +453,7 @@ export class RoomRuntime {
   }
 
   // ---------------------------------------------------------------------------
-  // Seeker location + exposure penalty
+  // Seeker location (referee console only — never sent to hiders) + strike record
   // ---------------------------------------------------------------------------
 
   onSeekerLocation(playerId: string, fix: GeoFix) {
@@ -470,29 +462,13 @@ export class RoomRuntime {
     const prev = this.seekerFixes.get(playerId);
     if (prev && now - prev.atMs < this.cfg.seekerLocationMinIntervalMs) return;
     this.seekerFixes.set(playerId, { fix, atMs: now });
-
-    const until = this.exposures.get(playerId);
-    if (until === undefined) return;
-    if (until <= now) {
-      this.exposures.delete(playerId);
-      return;
-    }
-    this.to(this.hiderIds()).emit("seeker:exposed", this.exposureEvent(playerId, until));
-  }
-
-  private exposureEvent(seekerId: string, until: number): SeekerExposureEvent {
-    return {
-      seekerPlayerId: seekerId,
-      location: this.seekerFixes.get(seekerId)?.fix ?? null,
-      until: iso(until),
-    };
   }
 
   private startExposure(seekerId: string, untilMs: number) {
     this.exposures.set(seekerId, untilMs);
-    this.log.info("seeker exposed", { seekerId });
-    // Hiders see the seeker; the seeker is told they're exposed (penalty is public, not secret).
-    this.to([...this.hiderIds(), seekerId]).emit("seeker:exposed", this.exposureEvent(seekerId, untilMs));
+    // Two misses in 60 s: recorded for the referee console only. Seeker locations are
+    // never sent to hiders — location sharing is one-way (hiders → seekers).
+    this.log.info("seeker strike limit", { seekerId });
   }
 
   // ---------------------------------------------------------------------------

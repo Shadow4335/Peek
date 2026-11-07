@@ -1,11 +1,10 @@
 "use client";
 
 import type { PingWaveEvent, PlayerRow } from "@hideseek/shared";
-import { ChevronDown, ChevronUp, Hand, Info, Loader2, Lock, ScanEye } from "lucide-react";
-import { useState } from "react";
+import { Crosshair, Hand, Info, Loader2, Lock, ScanEye, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { OutgoingRequest } from "@/lib/useMatch";
 import { Badge } from "@/components/ui/Badge";
-import { SheetGrabber } from "@/components/ui/Card";
 import { FRESH_PING_MS, formatAgo } from "@/lib/useNow";
 import { initialOf } from "@/components/map/markers";
 
@@ -22,13 +21,18 @@ interface Props {
   onRequest: (hiderId: string) => void;
 }
 
+/** Above the home indicator, clear of the map attribution. */
+const FAB_BOTTOM = "max(env(safe-area-inset-bottom), 1rem)";
+
 /**
- * "Last pings" sheet: every uncaught hider with their snapshot state (fresh / aged /
- * waiting), capture time and GPS accuracy, plus "Tag [Hider]" (shared 20 s cooldown) and
- * the manual tag-request fallback. Doubles as the text equivalent of the map pins.
+ * Seeker tag controls, kept off the map until needed: a floating "Tag" button (shows the
+ * shared 20 s cooldown and any pending request) opens a panel overlaid on the map with
+ * every uncaught hider's snapshot state (fresh / aged / waiting), capture time and GPS
+ * accuracy, "Tag [Hider]" and the manual tag-request fallback. Doubles as the text
+ * equivalent of the map pins.
  */
 export function TagDrawer({ hiders, waves, cooldownUntil, eligible, outgoing, hasFix, now, onTag, onRequest }: Props) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const lockedMs = cooldownUntil - now;
   const locked = lockedMs > 0;
@@ -47,38 +51,72 @@ export function TagDrawer({ hiders, waves, cooldownUntil, eligible, outgoing, ha
     setBusy(null);
   };
 
-  return (
-    <section
-      data-testid="tag-drawer"
-      aria-label="Last pings"
-      className="pb-safe absolute inset-x-0 bottom-0 z-10 flex max-h-[50vh] flex-col rounded-t-panel bg-surface/95 px-4 pt-3 shadow-panel ring-1 ring-line backdrop-blur-md animate-sheet"
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const fab = (
+    <button
+      type="button"
+      data-testid="tag-toggle"
+      onClick={() => setOpen((o) => !o)}
+      aria-expanded={open}
+      aria-controls="tag-panel"
+      aria-label={open ? "Close tag panel" : `Open tag panel — ${hiders.length} hiding`}
+      style={{ bottom: FAB_BOTTOM }}
+      className={`absolute left-1/2 z-30 flex min-h-14 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full px-6 text-base font-semibold shadow-panel ring-1 transition-colors ${
+        open ? "bg-surface-raised text-ink ring-line" : "bg-accent text-on-accent ring-accent/40"
+      }`}
     >
-      <SheetGrabber />
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex min-h-12 items-center justify-between"
-        aria-expanded={open}
+      {open ? (
+        <>
+          <X className="size-5" aria-hidden /> Close
+        </>
+      ) : (
+        <>
+          <Crosshair className="size-5" aria-hidden /> Tag
+          <span className="rounded-full bg-on-accent/15 px-2 py-0.5 text-xs tabular-nums">{hiders.length} hiding</span>
+          {locked ? (
+            <span data-testid="tag-cooldown" className="peek-timer flex items-center gap-1 text-sm">
+              <Lock className="size-3.5" aria-hidden />
+              {Math.ceil(lockedMs / 1000)}s
+            </span>
+          ) : outgoing ? (
+            <Loader2 className="size-4 animate-spin" aria-label="Tag request pending" />
+          ) : null}
+        </>
+      )}
+    </button>
+  );
+
+  if (!open) return fab;
+
+  return (
+    <>
+      <section
+        id="tag-panel"
+        data-testid="tag-drawer"
+        aria-label="Tag hiders"
+        style={{ bottom: `calc(${FAB_BOTTOM} + 4.25rem)` }}
+        className="absolute inset-x-3 z-30 flex max-h-[min(60vh,32rem)] animate-pop flex-col rounded-panel bg-surface/95 px-4 pt-3 shadow-panel ring-1 ring-line backdrop-blur-md"
       >
-        <span className="flex items-center gap-2">
-          <ScanEye className="size-5 text-primary-text" aria-hidden />
-          <h2 className="text-lg">Last pings</h2>
-          <span className="text-sm text-ink-2">· {hiders.length} hiding</span>
-        </span>
-        <span className="flex items-center gap-2">
+        <div className="flex min-h-11 items-center justify-between">
+          <span className="flex items-center gap-2">
+            <ScanEye className="size-5 text-primary-text" aria-hidden />
+            <h2 className="text-lg">Last pings</h2>
+            <span className="text-sm text-ink-2">· {hiders.length} hiding</span>
+          </span>
           {locked ? (
             <Badge tone="warning" icon={<Lock className="size-3" aria-hidden />}>
-              <span data-testid="tag-cooldown" className="peek-timer">
-                {Math.ceil(lockedMs / 1000)}s
-              </span>
+              <span className="peek-timer">{Math.ceil(lockedMs / 1000)}s</span>
             </Badge>
           ) : null}
-          {open ? <ChevronDown className="size-5" /> : <ChevronUp className="size-5" />}
-        </span>
-      </button>
+        </div>
 
-      {open ? (
-        <ul className="flex flex-col gap-2 overflow-y-auto pb-2">
+        <ul className="flex min-h-0 flex-col gap-2 overflow-y-auto pb-2">
           {hiders.length === 0 ? <li className="py-4 text-center text-sm text-ink-2">Everyone has been found!</li> : null}
           {hiders.map((h) => {
             const ping = lastPing(h.id);
@@ -88,7 +126,7 @@ export function TagDrawer({ hiders, waves, cooldownUntil, eligible, outgoing, ha
             const capturedMs = ping ? now - Date.parse(ping.capturedAt) : null;
             const fresh = ping && !ping.stale && capturedMs !== null && capturedMs < FRESH_PING_MS;
             return (
-              <li key={h.id} className="flex flex-col gap-2 rounded-button bg-surface-raised p-3 ring-1 ring-line">
+              <li key={h.id} className="flex shrink-0 flex-col gap-2 rounded-button bg-surface-raised p-3 ring-1 ring-line">
                 <div className="flex items-center gap-3">
                   <span
                     aria-hidden
@@ -153,13 +191,12 @@ export function TagDrawer({ hiders, waves, cooldownUntil, eligible, outgoing, ha
             );
           })}
         </ul>
-      ) : null}
-      {open ? (
-        <p className="flex items-start gap-1.5 pb-1 text-xs text-ink-2">
+        <p className="flex items-start gap-1.5 pb-3 text-xs text-ink-2">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           Positions may have changed since the last ping. Dashed circles show GPS accuracy.
         </p>
-      ) : null}
-    </section>
+      </section>
+      {fab}
+    </>
   );
 }

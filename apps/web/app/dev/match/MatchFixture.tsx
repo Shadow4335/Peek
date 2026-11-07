@@ -180,15 +180,6 @@ export function MatchFixture() {
     ],
     ["Back in bounds", () => socket.serverEmit("hider:back_in_bounds", { playerId: role === "HIDER" ? "me" : "h2" })],
     [
-      "Expose seeker",
-      () =>
-        socket.serverEmit("seeker:exposed", {
-          seekerPlayerId: role === "HIDER" ? "s1" : "me",
-          location: { ...off(-0.0003, -0.0002), accuracy_m: 6 },
-          until: iso(Date.now() + 30_000),
-        }),
-    ],
-    [
       "Incoming tag request",
       () =>
         socket.serverEmit("tag_request:incoming", {

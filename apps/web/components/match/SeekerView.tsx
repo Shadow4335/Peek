@@ -8,13 +8,13 @@ import { Hud } from "./Hud";
 import type { LiveMarker, PingDot } from "./MatchMap";
 import { TagDrawer } from "./TagDrawer";
 import { Toasts } from "./Toasts";
-import { isEndgame, msUntil, type MatchViewProps } from "./types";
+import { isEndgame, msUntil, visibleWave, type MatchViewProps } from "./types";
 
 const MatchMap = dynamic(() => import("./MatchMap"), { ssr: false });
 
 /**
  * Seeker radar (and the read-only spectator view for caught hiders / unassigned players):
- * fading ping circles for the last three waves, live out-of-bounds hiders, tag drawer.
+ * the latest ping wave for 15 s after it arrives, live out-of-bounds hiders, tag drawer.
  */
 export function SeekerView({ room, me, players, match, fix, now, spectator }: MatchViewProps & { spectator?: boolean }) {
   const nameOf = useMemo(() => new Map(players.map((p) => [p.id, p.display_name])), [players]);
@@ -22,11 +22,11 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
   const uncaught = hiders.filter((p) => !p.caught_at);
   const uncaughtIds = new Set(uncaught.map((h) => h.id));
 
-  const pings: PingDot[] = match.waves.flatMap((w, rank) =>
-    w.pings
-      .filter((p) => uncaughtIds.has(p.playerId))
-      .map((p) => ({ ...p, label: nameOf.get(p.playerId) ?? "Hider", rank, wave: w.waveNumber, capturedAt: p.heartbeatAt })),
-  );
+  // Only the latest wave, and only for PING_VISIBLE_MS after it arrives.
+  const shown = visibleWave(match, now);
+  const pings: PingDot[] = (shown?.pings ?? [])
+    .filter((p) => uncaughtIds.has(p.playerId))
+    .map((p) => ({ ...p, label: nameOf.get(p.playerId) ?? "Hider", rank: 0, wave: shown!.waveNumber, capturedAt: p.heartbeatAt }));
 
   const oob = match.outOfBounds.filter((o) => uncaughtIds.has(o.playerId));
   const markers: LiveMarker[] = oob.map((o) => ({
@@ -38,7 +38,6 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
     kind: "oob-hider",
   }));
 
-  const myExposure = match.exposures.find((e) => e.seekerPlayerId === me.id && Date.parse(e.until) > now);
   const caughtMe = me.role === "HIDER" && me.caught_at;
   const catcher = me.caught_by_player_id ? nameOf.get(me.caught_by_player_id) : null;
 
@@ -51,7 +50,7 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
         pings={pings}
         markers={markers}
         now={now}
-        padding={{ top: 90, bottom: spectator ? 40 : 230 }}
+        padding={{ top: 90, bottom: spectator ? 40 : 90 }}
       />
       <Hud
         label={spectator ? "Spectating" : "Seeking"}
@@ -65,11 +64,6 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
         {caughtMe ? (
           <Banner tone="info" icon={<UserX className="size-5" />}>
             You were caught{catcher ? ` by ${catcher}` : ""}. Spectating the rest of the match.
-          </Banner>
-        ) : null}
-        {myExposure ? (
-          <Banner tone="warn" icon={<Eye className="size-5" />}>
-            Two misses — hiders can see you for {Math.ceil(msUntil(myExposure.until, now) / 1000)}s
           </Banner>
         ) : null}
         {oob.map((o) => (

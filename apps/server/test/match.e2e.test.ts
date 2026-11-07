@@ -103,7 +103,7 @@ describe("state machine + ping loop", () => {
 });
 
 describe("Option C tagging", () => {
-  it("borderline tag forces a GPS flush, fails generically, cools down, and 2 strikes expose the seeker", async () => {
+  it("borderline tag forces a GPS flush, fails generically, cools down, and 2 strikes never reveal the seeker", async () => {
     const { store, seeker, seekerId, hiders } = await activeRoom();
     const hider = hiders[0]!;
     const flush = autoFlush(hider.sock, () => at(0));
@@ -119,16 +119,17 @@ describe("Option C tagging", () => {
     const r2 = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hider.id, seeker: at(0) });
     expect(r2.result).toBe("COOLDOWN");
 
-    // Second strike inside 60 s → hiders see the seeker.
+    // Second strike inside 60 s: recorded server-side, but the seeker's position is never
+    // sent to hiders (location sharing is one-way). Nothing the hider receives has coordinates.
     store.clearCooldown(seekerId);
-    const exposed = next(hider.sock, "seeker:exposed");
-    const toldSeeker = next(seeker, "seeker:exposed");
+    const hiderEvents: Array<[string, unknown]> = [];
+    hider.sock.onAny((event: string, payload: unknown) => hiderEvents.push([event, payload]));
     const r3 = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hider.id, seeker: at(100) });
     expect(r3).not.toHaveProperty("exposed_until");
-    const ev = await exposed;
-    expect(ev.seekerPlayerId).toBe(seekerId);
-    expect(ev.location?.lat).toBeCloseTo(north(100).lat, 6);
-    expect((await toldSeeker).seekerPlayerId).toBe(seekerId);
+    seeker.emit("seeker:location", at(100));
+    await sleep(100);
+    expect(JSON.stringify(hiderEvents)).not.toContain(String(north(100).lat));
+    expect(hiderEvents.map(([e]) => e)).not.toContain("seeker:exposed");
   });
 
   it("stale hider fix is refreshed before judging; successful tag ends the match for the last hider", async () => {
@@ -149,12 +150,21 @@ describe("Option C tagging", () => {
     expect(store.rooms.get(room.id)!.winner).toBe("SEEKERS");
   });
 
-  it("20 m discount cap: 34 m raw with ±15 m accuracies tags (eff 14 m)", async () => {
+  it("3 ft radius after the 20 m discount cap: ±15 m fixes tag at 20.5 m raw (eff 0.5 m)", async () => {
     const { seeker, hiders } = await activeRoom(2);
     heartbeat(hiders[0]!.sock, at(0, 15));
     await sleep(50);
-    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(34, 15) });
+    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(20.5, 15) });
     expect(r.result).toBe("TAGGED");
+  });
+
+  it("3 ft radius: exact fixes 2 m apart miss", async () => {
+    const { seeker, hiders } = await activeRoom(2);
+    autoFlush(hiders[0]!.sock, () => at(0, 0));
+    heartbeat(hiders[0]!.sock, at(0, 0));
+    await sleep(50);
+    const r = await seeker.emitWithAck("seeker:tag", { hiderPlayerId: hiders[0]!.id, seeker: at(2, 0) });
+    expect(r.result).toBe("OUT_OF_RANGE");
   });
 
   it("hider that ignores FORCE_GPS_FLUSH costs ~2 s max, then is judged on old data", async () => {

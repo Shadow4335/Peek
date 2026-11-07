@@ -89,7 +89,7 @@ export function useHiderTelemetry(socket: GameSocket | null, enabled: boolean, f
   }, [socket, enabled]);
 }
 
-/** Seeker → server location (only used by the server while the seeker is exposed). */
+/** Seeker → server location (referee console only; never forwarded to hiders). */
 export function useSeekerBeacon(socket: GameSocket | null, enabled: boolean, fix: TimedFix | null) {
   const fixRef = useRef(fix);
   useEffect(() => {

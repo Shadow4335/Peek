@@ -2,6 +2,7 @@
 
 import {
   PING_HISTORY_OPACITY,
+  PING_VISIBLE_MS,
   type GeoFix,
   type HiderCaughtEvent,
   type OutOfBoundsEvent,
@@ -10,7 +11,6 @@ import {
   type PlayerRow,
   type RoomRow,
   type RoomStateEvent,
-  type SeekerExposureEvent,
   type TagAttemptResponse,
   type TagRequestIncomingEvent,
   type TagRequestResolvedEvent,
@@ -46,7 +46,8 @@ const KEEP_WAVES = PING_HISTORY_OPACITY.length;
 
 /**
  * Client-side match state fed by the game-server socket: ping history (last 3 waves),
- * seeker exposures, out-of-bounds hiders, tag requests, haptic alerts and toasts.
+ * out-of-bounds hiders, tag requests, haptic alerts and toasts. Seeker positions are never
+ * sent to hiders.
  */
 export interface MatchOptions {
   /** Player names for friendly copy ("Bea was spotted!"). */
@@ -70,12 +71,9 @@ export function useMatch(
   }, [nameOf, announcePings]);
   const myId = me?.id ?? null;
   const [waves, setWaves] = useState<PingWaveEvent[]>([]);
-  const [exposures, setExposures] = useState<Record<string, SeekerExposureEvent>>({});
+  /** Client clock time until which the latest wave is drawn on the map (null = nothing yet). */
+  const [pingVisibleUntil, setPingVisibleUntil] = useState<number | null>(null);
   const [oob, setOob] = useState<Record<string, OutOfBoundsEvent>>({});
-  const exposuresRef = useRef(exposures);
-  useEffect(() => {
-    exposuresRef.current = exposures;
-  }, [exposures]);
   const [boundaryWarningAt, setBoundaryWarningAt] = useState<number | null>(null);
   const [incoming, setIncoming] = useState<TagRequestIncomingEvent | null>(null);
   const [outgoing, setOutgoing] = useState<OutgoingRequest | null>(null);
@@ -110,7 +108,11 @@ export function useMatch(
       .gt("wave_number", latestWave - KEEP_WAVES)
       .then(({ data }) => {
         if (cancelled || !data) return;
-        for (const w of groupWaves(data as PingSnapshotRow[], room.id)) addWave(w);
+        const loaded = groupWaves(data as PingSnapshotRow[], room.id);
+        for (const w of loaded) addWave(w);
+        // Reload mid-match: the newest wave stays visible for what is left of its window.
+        const newest = loaded.reduce<PingWaveEvent | null>((m, w) => (!m || w.waveNumber > m.waveNumber ? w : m), null);
+        if (newest) setPingVisibleUntil((cur) => cur ?? Date.parse(newest.firedAt) + PING_VISIBLE_MS);
       });
     return () => {
       cancelled = true;
@@ -121,12 +123,13 @@ export function useMatch(
   useEffect(() => {
     if (!socket) return;
     const onState = (s: RoomStateEvent) => {
-      setExposures(Object.fromEntries(s.exposedSeekers.map((e) => [e.seekerPlayerId, e])));
       setOob(Object.fromEntries(s.outOfBoundsHiders.map((o) => [o.playerId, o])));
       setIncoming(s.pendingTagRequest);
     };
     const onWave = (w: PingWaveEvent) => {
       addWave(w);
+      // Timed from arrival on this device, so server/phone clock skew can't shorten it.
+      setPingVisibleUntil(Date.now() + PING_VISIBLE_MS);
       if (myId && w.pings.some((p) => p.playerId === myId)) toast("Ping sent — seekers saw your position", "warn");
       else if (announceRef.current && w.pings.length > 0) {
         const first = nameOfRef.current?.(w.pings[0]!.playerId);
@@ -158,14 +161,6 @@ export function useMatch(
       toast(c.playerId === myId ? "You were caught!" : `A hider was caught — ${c.hidersRemaining} left`, "good");
       refresh();
     };
-    const onExposed = (e: SeekerExposureEvent) => {
-      const prev = exposuresRef.current[e.seekerPlayerId];
-      if (!prev || Date.parse(prev.until) < Date.now()) {
-        if (e.seekerPlayerId === myId) toast("Two misses — hiders can see you for 30s!", "bad");
-        else toast("A seeker is exposed for 30s — check the map", "good");
-      }
-      setExposures((m) => ({ ...m, [e.seekerPlayerId]: e }));
-    };
     const onIncoming = (r: TagRequestIncomingEvent) => {
       vibrate(LONG_BUZZ);
       setIncoming(r);
@@ -192,7 +187,6 @@ export function useMatch(
     socket.on("hider:out_of_bounds", onOob);
     socket.on("hider:back_in_bounds", onBack);
     socket.on("hider:caught", onCaught);
-    socket.on("seeker:exposed", onExposed);
     socket.on("tag_request:incoming", onIncoming);
     socket.on("tag_request:resolved", onResolved);
     return () => {
@@ -203,7 +197,6 @@ export function useMatch(
       socket.off("hider:out_of_bounds", onOob);
       socket.off("hider:back_in_bounds", onBack);
       socket.off("hider:caught", onCaught);
-      socket.off("seeker:exposed", onExposed);
       socket.off("tag_request:incoming", onIncoming);
       socket.off("tag_request:resolved", onResolved);
     };
@@ -289,12 +282,11 @@ export function useMatch(
     }
   }, [socket, toast]);
 
-  const exposureList = useMemo(() => Object.values(exposures), [exposures]);
   const oobList = useMemo(() => Object.values(oob), [oob]);
 
   return {
     waves,
-    exposures: exposureList,
+    pingVisibleUntil,
     outOfBounds: oobList,
     boundaryWarningAt,
     incoming,

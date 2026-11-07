@@ -125,11 +125,12 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
 - **Haversine**: `a = sin²(Δφ/2) + cos φ1 · cos φ2 · sin²(Δλ/2)`, `d_raw = 2R · atan2(√a, √(1−a))`.
 - **Accuracy discount**: `d_discount = min(σ_seeker + σ_hider, 20.0 m)` (σ clamped ≥ 0).
 - **Effective distance**: `d_effective = max(0, d_raw − d_discount)`.
-- **Tag succeeds** iff `d_effective ≤ 15.0 m`.
+- **Tag succeeds** iff `d_effective ≤ 0.9144 m` (3 ft; migration 0004 — was 15 m).
 - **Fresh-fix required** (server emits `FORCE_GPS_FLUSH`, waits 2 s, retries once) iff
-  hider heartbeat age > 10 s **or** `15 m < d_effective ≤ 40 m`.
+  hider heartbeat age > 10 s **or** `0.9144 m < d_effective ≤ 40 m`.
 - Failed tag → generic `OUT_OF_RANGE`, seeker locked 20 s (`last_failed_tag_at`).
-- 2 failed tags within 60 s → seeker exposed to hiders for 30 s (`exposed_until`).
+- 2 failed tags within 60 s → recorded as `exposed_until` (referee console only). **Location sharing is
+  one-way: seeker positions are never sent to hiders.**
 - Dispute fallback: after a failed tag or hider telemetry > 30 s stale, seeker may send a
   "Tag Request" → 15 s confirm modal on hider.
 - Geofence: `turf.kinks` must be empty; area via `turf.area`; circle mode = `turf.circle(center,
@@ -139,8 +140,8 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
 - Heartbeat interval 5 s; ping snapshot `stale` if heartbeat age > 20 s.
 - Ping scheduler delay `U(min_ping_s, max_ping_s)`, × 0.75 when < 10 min remaining.
   Pre-ping hider haptic warning 10 s before each wave (`navigator.vibrate([200,100,200])`).
-- Seeker ping rendering: circle radius `max(accuracy_m, 10)`; opacity latest 100 %, N-1 50 %,
-  N-2 20 %, older hidden.
+- Seeker ping rendering: circle radius `max(accuracy_m, 10)`; only the latest wave is drawn, for
+  `PING_VISIBLE_MS` (15 s) after it arrives on the device, then the map is empty until the next wave.
 
 ---
 
@@ -185,7 +186,7 @@ test/                   vitest: unit + socket.io end-to-end against an in-memory
     `seeker:tag_request`.
   - S→C: `room:status`, `room:state` (private snapshot on join), `ping:wave`, `ping:pre_warning`
     (hiders), `FORCE_GPS_FLUSH` (one hider), `hider:boundary_warning` (one hider),
-    `hider:out_of_bounds` / `hider:back_in_bounds`, `hider:caught`, `seeker:exposed` (hiders),
+    `hider:out_of_bounds` / `hider:back_in_bounds`, `hider:caught`,
     `tag_request:incoming` (one hider), `tag_request:resolved` (seeker + hider).
 - Heartbeat timestamp = `min(client fix time, server now)`; out-of-order fixes dropped; ≥ 2 s
   between heartbeats (fresh-fix replies exempt).
@@ -195,7 +196,8 @@ test/                   vitest: unit + socket.io end-to-end against an in-memory
 - **Tag flow:** `attempt_proximity_tag(fresh=false)` → if `NEEDS_FRESH_FIX`: emit `FORCE_GPS_FLUSH`,
   wait ≤ 2 s for `hider:fresh_fix` (skipped if hider offline) → `attempt_proximity_tag(fresh=true)`.
   Ack is stripped to `{ result, cooldownUntil?, tagRequestEligible? }`. One tag in flight per seeker.
-  Exposure → `seeker:exposed` to hiders, refreshed on each `seeker:location` until it expires.
+  Strike limit → kept in runtime memory for `/admin` only; nothing is broadcast. `seeker:location` is
+  stored for the referee map and never forwarded to hiders.
 - **Tag request:** eligible if that seeker failed a tag on that hider in the last 60 s, or the
   hider's fix is > 30 s old / missing. One pending per seeker and per hider; 15 s to answer;
   declined/expired → 20 s before the same seeker can re-request that hider.
@@ -262,30 +264,32 @@ lib/                      supabase singleton + ensureSession (anonymous auth), s
 ```
 components/match/MatchScreen.tsx   role/status router; owns GPS watch, wake lock, telemetry, useMatch
   HeadStartSeeker                  locked full-screen countdown (no map)
-  HiderView                        map (own pings + exposed-seeker markers), OOB/exposure banners,
+  HiderView                        map (own pings only), OOB banners,
                                    Stealth Pocket Mode, slide-to-surrender (ACTIVE only), TagRequestModal
   SeekerView (+ spectator)         radar: fading ping circles, OOB hider live markers, TagDrawer
   MatchMap                         zone + my dot + "pings" fill/line layers + pulsing DOM markers
   StealthOverlay                   #000 z-60, swallows touches, double-tap → dim slide-to-unlock (5 s)
   TagRequestModal                  z-70 (above stealth), 15 s countdown, accept/decline
-  TagDrawer                        "Tag [name]" per uncaught hider, shared 20 s lock, tag-request link
-lib/useMatch.ts        socket → waves (last 3), exposures, OOB, incoming/outgoing tag requests,
+  TagDrawer                        floating "Tag" button (cooldown / pending shown on it) → panel overlaid
+                                   on the map: "Tag [name]" per uncaught hider, shared 20 s lock,
+                                   tag-request link. Closed by default so the map fills the seeker screen.
+lib/useMatch.ts        socket → waves (last 3), OOB, incoming/outgoing tag requests,
                        cooldown, toasts, haptics; actions tag / requestTag / answerTagRequest / surrender
 lib/useHiderTelemetry  heartbeat every 5 s (+ first fix immediately); FORCE_GPS_FLUSH →
                        getCurrentPosition(maximumAge 0) → "hider:fresh_fix" (fallback: watched fix < 5 s)
-                       useSeekerBeacon: seeker:location every 3 s (server uses it while exposed)
+                       useSeekerBeacon: seeker:location every 3 s (referee console only)
 lib/useWakeLock        screen wake lock for the whole live match; re-acquired on visibilitychange
 lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
 ```
 
-- Ping rendering: radius `max(accuracy_m, 10)`, opacity 1 / 0.5 / 0.2 by wave age, stale = amber.
+- Ping rendering: radius `max(accuracy_m, 10)`, latest wave only, hidden 15 s after arrival
+  (`useMatch().pingVisibleUntil` + `visibleWave()` in `components/match/types.ts`), stale = amber.
   Hiders only see their own pings; seekers + spectators see all uncaught hiders.
 - Banners and toasts render as children of `<Hud>` so they stack instead of overlapping.
   `isEndgame(room, now)` drives the "final 10 min" line (from `ends_at`, ACTIVE only).
-- Server change: `seeker:exposed` now also goes to the exposed seeker; `room:state` includes the
-  seeker's own exposure.
+- `seeker:exposed` was removed: hiders never receive seeker positions.
 - `/dev/match` — dev-only fixture (404 in prod) with a FakeSocket + QA panel (fire pings, warnings,
-  OOB, exposure, tag request, go ACTIVE, end). Stub `navigator.geolocation` before picking a role.
+  OOB, tag request, go ACTIVE, end). Stub `navigator.geolocation` before picking a role.
 - Next 16 `cacheComponents` flags `Date.now()` evaluated during prerender in client components —
   keep clock reads in effects/handlers or in trees that only render after client data loads.
 
@@ -371,9 +375,9 @@ lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
 - **Map:** `applyPeekMapTheme` recolours background/water/park/building/road/label layers of any
   OpenMapTiles-schema style on load. Markers (`map/markers.ts`, styles `.peek-marker*` / `.peek-you`):
   you = lavender dot; latest-wave snapshot pin = sage "fresh" (< 60 s since **capture**, i.e.
-  `heartbeatAt`) or dimmed coral "aged", always with a "x s ago / last seen" label; OOB hider = amber;
-  exposed seeker = lavender. Pins pop + two sage rings **only when a new wave arrives** (history loaded
-  on mount appears silently); labels update in place each second. Dashed circles = real GPS accuracy.
+  `heartbeatAt`) or dimmed coral "aged", always with a "x s ago / last seen" label; OOB hider = amber.
+  Pins pop + two sage rings **only when a new wave arrives** (pins already on screen at mount appear
+  silently); labels update in place each second. Dashed circles = real GPS accuracy.
 - **Copy:** "Ready to disappear?", "Your squad / Waiting for friends…", role reveals "Super Seeker"
   / "Sneaky Hider", "Bea was spotted!", "Positions may have changed since the last ping.", "Game over.
   Nice hiding!". Never say "live" for snapshot data.

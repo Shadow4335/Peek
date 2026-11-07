@@ -12,6 +12,12 @@ export interface MatchViewProps {
   wakeLockHeld: boolean;
 }
 
+/** The latest ping wave while it is still on screen (PING_VISIBLE_MS after arrival), else null. */
+export const visibleWave = (match: MatchViewProps["match"], now: number) => {
+  const latest = match.waves[0];
+  return latest && match.pingVisibleUntil !== null && now < match.pingVisibleUntil ? latest : null;
+};
+
 export const msUntil = (iso: string | null, now: number) => (iso ? Date.parse(iso) - now : 0);
 
 /** True during the final 10 minutes of an ACTIVE match (pings 0.75×). */

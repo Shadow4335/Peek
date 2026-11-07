@@ -36,10 +36,10 @@ export interface LiveMarker {
   label: string;
   lat: number;
   lng: number;
-  kind: "oob-hider" | "exposed-seeker";
+  kind: "oob-hider";
   /** Capture time of the shown position, when known. */
   at?: string;
-  /** Extra text, e.g. exposure countdown. */
+  /** Extra text, e.g. "out of bounds". */
   note?: string;
 }
 
@@ -108,8 +108,9 @@ function syncPins<T extends { id: string; lat: number; lng: number }>(
 
 /**
  * Full-screen hunt map. Shows the play zone, your position (lavender), and only the
- * snapshots the server sent this player: latest wave as labelled pins (sage = fresh,
- * coral = aged) plus real GPS-accuracy circles for the last three waves (100/50/20 %).
+ * snapshots the server sent this player: the latest wave as labelled pins (sage = fresh,
+ * coral = aged) with real GPS-accuracy circles. Callers pass pings only while the wave is
+ * visible (PING_VISIBLE_MS after arrival), so the map is empty between waves.
  */
 export default function MatchMap({ fence, buffered, myFix, pings = [], markers = [], now, padding }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -190,12 +191,13 @@ export default function MatchMap({ fence, buffered, myFix, pings = [], markers =
           state: aged ? "aged" : "fresh",
         };
       },
-      seededPins.current, // history loaded on mount appears without fanfare
+      seededPins.current, // pins already on screen at mount appear without fanfare
     );
-    if (latest.length) seededPins.current = true;
+    // Pins vanish between waves, so every wave after mount gets the pop + rings.
+    seededPins.current = true;
   }, [map, pings, now]);
 
-  // Penalty markers: out-of-bounds hider (amber) / exposed seeker (lavender).
+  // Penalty markers: out-of-bounds hider (amber). Seekers are never shown to hiders.
   const liveStore = useRef(new Map<string, PinEntry>());
   useEffect(() => {
     if (!map) return;
@@ -208,8 +210,8 @@ export default function MatchMap({ fence, buffered, myFix, pings = [], markers =
         initial: initialOf(m.label),
         title: m.label,
         detail: [m.note, m.at ? formatAgo(m.at, now) : null].filter(Boolean).join(" · "),
-        state: m.kind === "oob-hider" ? "alert" : "seeker",
-        ring: m.kind === "oob-hider" ? COLORS.alert : COLORS.seeker,
+        state: "alert",
+        ring: COLORS.alert,
       }),
       true,
     );

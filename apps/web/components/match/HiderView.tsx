@@ -1,46 +1,34 @@
 "use client";
 
-import { AlertTriangle, EyeOff, Moon, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Moon, ShieldAlert } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SHEET_CLASS, SheetGrabber } from "@/components/ui/Card";
 import { SlideToConfirm } from "@/components/ui/SlideToConfirm";
 import { formatClock } from "@/lib/useNow";
 import { HeadStartBanner } from "./HeadStartBanner";
 import { Hud } from "./Hud";
-import type { LiveMarker, PingDot } from "./MatchMap";
+import type { PingDot } from "./MatchMap";
 import { StealthOverlay } from "./StealthOverlay";
 import { TagRequestModal } from "./TagRequestModal";
 import { Toasts } from "./Toasts";
-import { isEndgame, msUntil, type MatchViewProps } from "./types";
+import { isEndgame, msUntil, visibleWave, type MatchViewProps } from "./types";
 
 const MatchMap = dynamic(() => import("./MatchMap"), { ssr: false });
 
 export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: MatchViewProps) {
   const [stealth, setStealth] = useState(false);
   const active = room.status === "ACTIVE";
-  const nameOf = useMemo(() => new Map(players.map((p) => [p.id, p.display_name])), [players]);
 
   const hiders = players.filter((p) => p.role === "HIDER");
   const hidersLeft = hiders.filter((p) => !p.caught_at).length;
 
   // My own recent pings (what seekers saw).
-  const myPings: PingDot[] = match.waves.flatMap((w, rank) =>
-    w.pings
-      .filter((p) => p.playerId === me.id)
-      .map((p) => ({ ...p, label: "Your ping", rank, wave: w.waveNumber, capturedAt: p.heartbeatAt })),
-  );
-
-  const exposed = match.exposures.filter((e) => Date.parse(e.until) > now && e.location);
-  const markers: LiveMarker[] = exposed.map((e) => ({
-    id: e.seekerPlayerId,
-    label: nameOf.get(e.seekerPlayerId) ?? "Seeker",
-    note: `exposed ${Math.ceil(msUntil(e.until, now) / 1000)} s`,
-    lat: e.location!.lat,
-    lng: e.location!.lng,
-    kind: "exposed-seeker",
-  }));
+  const shown = visibleWave(match, now);
+  const myPings: PingDot[] = (shown?.pings ?? [])
+    .filter((p) => p.playerId === me.id)
+    .map((p) => ({ ...p, label: "Your ping", rank: 0, wave: shown!.waveNumber, capturedAt: p.heartbeatAt }));
 
   const penalized = match.outOfBounds.some((o) => o.playerId === me.id);
   const graceLeft = match.boundaryWarningAt ? match.boundaryWarningAt - now : 0;
@@ -52,7 +40,6 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
         buffered={room.geofence_buffered}
         myFix={fix}
         pings={myPings}
-        markers={markers}
         now={now}
         padding={{ top: 90, bottom: active ? 190 : 120 }}
       />
@@ -72,11 +59,6 @@ export function HiderView({ room, me, players, match, fix, now, wakeLockHeld }: 
         ) : graceLeft > 0 ? (
           <Banner tone="warn" icon={<AlertTriangle className="size-5" />}>
             Leaving the zone — {formatClock(graceLeft)} until seekers see you
-          </Banner>
-        ) : null}
-        {exposed.length > 0 ? (
-          <Banner tone="good" icon={<EyeOff className="size-5" />}>
-            {exposed.length === 1 ? "A seeker is" : `${exposed.length} seekers are`} exposed — look for the lavender pin
           </Banner>
         ) : null}
         <Toasts toasts={match.toasts} />

@@ -30,12 +30,15 @@ export const ENDGAME_PING_MULTIPLIER = 0.75;
 export const PRE_PING_WARNING_MS = 10_000;
 export const HAPTIC_PATTERN = [200, 100, 200] as const;
 export const PING_MIN_RENDER_RADIUS_M = 10;
+/** A ping wave stays on the map this long after it arrives, then hides until the next wave. */
+export const PING_VISIBLE_MS = 15_000;
 /** Opacity for [latest, N-1, N-2]; older waves are hidden. */
 export const PING_HISTORY_OPACITY = [1, 0.5, 0.2] as const;
 
 // Tagging (Option C)
 export const TAG_MAX_ACCURACY_DISCOUNT_M = 20;
-export const TAG_SUCCESS_THRESHOLD_M = 15;
+/** 3 ft. Applied to d_effective (after the GPS accuracy discount). */
+export const TAG_SUCCESS_THRESHOLD_M = 0.9144;
 export const TAG_BORDERLINE_MAX_M = 40;
 export const TAG_FRESH_FIX_MAX_AGE_MS = 10_000;
 export const TAG_FRESH_FIX_TIMEOUT_MS = 2_000;
