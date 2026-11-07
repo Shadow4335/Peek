@@ -60,7 +60,7 @@ across build phases. **Update the Phase Checklist at the end of every phase.**
   demoted to `UNASSIGNED` (spectator). Sets `head_start_ends_at = now() + head_start_secs`,
   `ends_at = head_start_ends_at + game_duration_mins`.
 - `HEAD_START`: seekers see locked countdown; hiders see map + countdown + Stealth toggle.
-- `ACTIVE`: hider heartbeats every 10 s; server ping loop; tagging.
+- `ACTIVE`: hider heartbeats every 5 s; server ping loop; tagging.
 - `ENDED`: all hiders caught → `SEEKERS` win; `ends_at` reached → `HIDERS` win.
   Host abort → `ENDED` with `winner = null`.
 
@@ -136,7 +136,7 @@ raised as plain-message codes (`ROLE_FULL`, `OUTSIDE_PLAY_ZONE`, `NOT_HOST`, …
   r, { steps: 64 })`; drift buffer = `turf.buffer(geofence, 0.012, { units: 'kilometers' })`.
 - Out of bounds: hider outside buffered fence continuously for 15 s → penalty / alert.
 - Ready check: accuracy ≤ 30 m and inside buffered fence.
-- Heartbeat interval 10 s; ping snapshot `stale` if heartbeat age > 20 s.
+- Heartbeat interval 5 s; ping snapshot `stale` if heartbeat age > 20 s.
 - Ping scheduler delay `U(min_ping_s, max_ping_s)`, × 0.75 when < 10 min remaining.
   Pre-ping hider haptic warning 10 s before each wave (`navigator.vibrate([200,100,200])`).
 - Seeker ping rendering: circle radius `max(accuracy_m, 10)`; opacity latest 100 %, N-1 50 %,
@@ -271,7 +271,7 @@ components/match/MatchScreen.tsx   role/status router; owns GPS watch, wake lock
   TagDrawer                        "Tag [name]" per uncaught hider, shared 20 s lock, tag-request link
 lib/useMatch.ts        socket → waves (last 3), exposures, OOB, incoming/outgoing tag requests,
                        cooldown, toasts, haptics; actions tag / requestTag / answerTagRequest / surrender
-lib/useHiderTelemetry  heartbeat every 10 s (+ first fix immediately); FORCE_GPS_FLUSH →
+lib/useHiderTelemetry  heartbeat every 5 s (+ first fix immediately); FORCE_GPS_FLUSH →
                        getCurrentPosition(maximumAge 0) → "hider:fresh_fix" (fallback: watched fix < 5 s)
                        useSeekerBeacon: seeker:location every 3 s (server uses it while exposed)
 lib/useWakeLock        screen wake lock for the whole live match; re-acquired on visibilitychange

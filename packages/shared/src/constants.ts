@@ -21,7 +21,7 @@ export const READY_FRESH_MS = 120_000;
 export const READY_REFRESH_MS = 30_000;
 
 // Telemetry
-export const HEARTBEAT_INTERVAL_MS = 10_000;
+export const HEARTBEAT_INTERVAL_MS = 5_000;
 export const PING_STALE_AFTER_MS = 20_000;
 
 // Ping scheduler

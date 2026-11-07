@@ -74,7 +74,7 @@ export function SeekerView({ room, me, players, match, fix, now, spectator }: Ma
         ) : null}
         {oob.map((o) => (
           <Banner key={o.playerId} tone="warn" icon={<ShieldAlert className="size-5" />}>
-            {nameOf.get(o.playerId) ?? "A hider"} is out of bounds — position shown, updates every 10 s
+            {nameOf.get(o.playerId) ?? "A hider"} is out of bounds — position shown, updates every 5 s
           </Banner>
         ))}
         {match.waves.length === 0 && !spectator ? (
