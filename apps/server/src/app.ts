@@ -2,6 +2,8 @@ import { createServer, type Server as HttpServer } from "node:http";
 import cors from "cors";
 import express from "express";
 import { Server } from "socket.io";
+import { verifyAdminPassword } from "./admin/credentials";
+import { createAdminRouter } from "./admin/routes";
 import { defaultRuntimeConfig, type RuntimeConfig } from "./game/config";
 import { RoomManager } from "./game/RoomManager";
 import type { Logger } from "./log";
@@ -15,6 +17,8 @@ export interface AppOptions {
   log: Logger;
   corsOrigins: string[];
   config?: Partial<RuntimeConfig>;
+  /** Override for tests; defaults to the hardcoded (hashed) admin password. */
+  adminPasswordCheck?: (candidate: string) => boolean;
 }
 
 export interface GameApp {
@@ -25,9 +29,11 @@ export interface GameApp {
 }
 
 /** Wires Express + Socket.io + RoomManager. Pure factory so tests can run it on a random port. */
-export function createGameApp({ store, log, corsOrigins, config }: AppOptions): GameApp {
+export function createGameApp({ store, log, corsOrigins, config, adminPasswordCheck }: AppOptions): GameApp {
   const app = express();
   app.disable("x-powered-by");
+  // Render terminates TLS in front of us; trust one proxy hop so req.ip is the client (login limiter).
+  app.set("trust proxy", 1);
   const origin = corsOrigin(corsOrigins);
   app.use(cors({ origin }));
 
@@ -50,6 +56,11 @@ export function createGameApp({ store, log, corsOrigins, config }: AppOptions): 
   app.get("/healthz", (_req, res) => {
     res.json({ ok: true, uptime_s: Math.round(process.uptime()), live_rooms: manager.size });
   });
+
+  app.use(
+    "/admin",
+    createAdminRouter({ store, manager, io, log, checkPassword: adminPasswordCheck ?? verifyAdminPassword }),
+  );
 
   registerSocketHandlers(io, { store, manager, log });
 

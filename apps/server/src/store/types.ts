@@ -54,6 +54,12 @@ export interface UserScopedStore {
 export interface GameStore {
   getRoom(roomId: string): Promise<RoomRow | null>;
   listLiveRooms(): Promise<RoomRow[]>;
+  /** Admin: newest rooms first. */
+  listRecentRooms(limit: number): Promise<RoomRow[]>;
+  /** Admin: players for many rooms in one query. */
+  getPlayersForRooms(roomIds: string[]): Promise<PlayerRow[]>;
+  /** Admin: remove a player row (lobby kick). */
+  removePlayer(playerId: string): Promise<void>;
   getPlayers(roomId: string): Promise<PlayerRow[]>;
   getPlayerByUser(roomId: string, userId: string): Promise<PlayerRow | null>;
   getTelemetry(roomId: string): Promise<HiderTelemetryRow[]>;

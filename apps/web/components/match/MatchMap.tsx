@@ -13,6 +13,7 @@ import { Marker, type Map as MlMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import { COLORS, ensureFenceLayers, feature, setGeoJson } from "@/components/map/layers";
 import { labelElement, pulseElement, userDotElement } from "@/components/map/markers";
+import { syncMarkers } from "@/components/map/syncMarkers";
 import { useMaplibre } from "@/components/map/useMaplibre";
 
 export interface PingDot {
@@ -53,33 +54,6 @@ function fitZone(map: MlMap, buffered: FenceGeometry, animate: boolean) {
     ],
     { padding: 24, animate, maxZoom: 18 },
   );
-}
-
-function syncMarkers<T extends { id: string; lat: number; lng: number }>(
-  map: MlMap,
-  store: Map<string, { marker: Marker; sig: string }>,
-  items: T[],
-  sig: (t: T) => string,
-  make: (t: T) => HTMLElement,
-) {
-  const seen = new Set<string>();
-  for (const it of items) {
-    seen.add(it.id);
-    const existing = store.get(it.id);
-    const s = sig(it);
-    if (existing && existing.sig === s) {
-      existing.marker.setLngLat([it.lng, it.lat]);
-      continue;
-    }
-    existing?.marker.remove();
-    store.set(it.id, { marker: new Marker({ element: make(it) }).setLngLat([it.lng, it.lat]).addTo(map), sig: s });
-  }
-  for (const [id, m] of store) {
-    if (!seen.has(id)) {
-      m.marker.remove();
-      store.delete(id);
-    }
-  }
 }
 
 /** Full-screen match map: zone, my dot, fading ping accuracy circles, pulsing live markers. */

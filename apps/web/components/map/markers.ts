@@ -88,3 +88,22 @@ export function pulseElement(label: string, color: string): HTMLDivElement {
   Object.assign(wrap.style, { position: "relative", pointerEvents: "none" });
   return wrap;
 }
+
+/** Solid dot with a name chip above it (admin map). */
+export function dotLabelElement(label: string, color: string, ring?: string): HTMLDivElement {
+  const wrap = document.createElement("div");
+  Object.assign(wrap.style, { position: "relative", pointerEvents: "none" } satisfies Partial<CSSStyleDeclaration>);
+  const dot = document.createElement("div");
+  Object.assign(dot.style, {
+    width: "18px",
+    height: "18px",
+    borderRadius: "999px",
+    background: color,
+    border: "3px solid #000",
+    boxShadow: ring ? `0 0 0 3px ${ring}` : "0 1px 4px rgba(0,0,0,.6)",
+  } satisfies Partial<CSSStyleDeclaration>);
+  const text = labelElement(label, color);
+  Object.assign(text.style, { position: "absolute", left: "50%", top: "-4px", transform: "translate(-50%, -100%)" });
+  wrap.append(dot, text);
+  return wrap;
+}

@@ -54,6 +54,25 @@ export class SupabaseGameStore implements GameStore {
     );
   }
 
+  async listRecentRooms(limit: number) {
+    return (
+      unwrap(
+        await this.db.from("rooms").select("*").order("created_at", { ascending: false }).limit(limit).returns<RoomRow[]>(),
+      ) ?? []
+    );
+  }
+
+  async getPlayersForRooms(roomIds: string[]) {
+    if (roomIds.length === 0) return [];
+    return (
+      unwrap(await this.db.from("players").select("*").in("room_id", roomIds).returns<PlayerRow[]>()) ?? []
+    );
+  }
+
+  async removePlayer(playerId: string) {
+    unwrap(await this.db.from("players").delete().eq("id", playerId));
+  }
+
   async getPlayers(roomId: string) {
     return (
       unwrap(await this.db.from("players").select("*").eq("room_id", roomId).returns<PlayerRow[]>()) ?? []

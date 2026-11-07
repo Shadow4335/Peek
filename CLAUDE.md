@@ -307,6 +307,29 @@ lib/haptics            navigator.vibrate guard (no-op on iOS Safari)
 
 ---
 
+## Admin / referee console (`/admin`, iPad-first)
+
+- **Auth is server-side only.** `apps/server/src/admin/credentials.ts` holds a hardcoded **scrypt
+  hash** (salt + hash) of the admin password — the plaintext is never in the repo, logs or the
+  browser bundle. Rotate by regenerating the pair (command in that file's header).
+- `POST /admin/login` → HMAC-signed session token (12 h; key is random per process, so restarts
+  sign admins out). 8 failed attempts / 15 min per IP → 429 (`trust proxy` = 1 for Render).
+- API (Bearer token, `Cache-Control: no-store`): `GET /admin/rooms`, `GET /admin/rooms/:id`
+  (room, players, live positions — hider telemetry + seeker beacons from the runtime, else DB
+  telemetry — `nextPingAt`, exposures, OOB), `POST /admin/rooms/:id/end {winner|null}` (CAS to
+  ENDED, runtime resync broadcasts `room:status`), `DELETE /admin/rooms/:id/players/:pid`
+  (LOBBY only, never the host). Types in `packages/shared/src/admin.ts`.
+- Web: `components/admin/*` — `AdminConsole` (token in sessionStorage via
+  `useSyncExternalStore`), `RoomList` (search + open/all filter, 5 s poll), `RoomDetail`
+  (2 s poll; map + roster + end/abort with confirm + lobby kick), `AdminMap`. Layout: md
+  sidebar 260 px; lg map | roster side by side (landscape), stacked in portrait. Touch
+  targets ≥ 44 px. `robots: noindex`.
+- QA without Supabase: `npm run dev:fake -w @hideseek/server` (launch config `server-fake`) —
+  FakeStore with seeded LOBBY/ACTIVE/ENDED rooms and simulated players; admin password `dev-admin`
+  in that mode only.
+
+---
+
 ## Phase Checklist
 
 - [x] **Phase 1** — Monorepo scaffold, `CLAUDE.md`, Supabase SQL layer (tables, RLS, RPCs).

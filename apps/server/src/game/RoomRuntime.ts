@@ -142,6 +142,20 @@ export class RoomRuntime {
     };
   }
 
+  /** Referee view: everything the server knows, including hider positions. */
+  adminSnapshot() {
+    const now = Date.now();
+    return {
+      nextPingAt: this.nextPingAtMs ? iso(this.nextPingAtMs) : null,
+      hiders: [...this.telemetry].map(([playerId, t]) => ({ playerId, ...t.fix, battery: t.battery, at: iso(t.atMs) })),
+      seekers: [...this.seekerFixes].map(([playerId, s]) => ({ playerId, ...s.fix, at: iso(s.atMs) })),
+      exposedSeekers: [...this.exposures]
+        .filter(([, until]) => until > now)
+        .map(([seekerPlayerId, until]) => ({ seekerPlayerId, until: iso(until) })),
+      outOfBoundsHiders: [...this.outOfBounds].filter(([, s]) => s.penalty).map(([id]) => id),
+    };
+  }
+
   snapshotFor(playerId: string): RoomStateEvent {
     const p = this.players.get(playerId);
     const role = p?.role ?? "UNASSIGNED";

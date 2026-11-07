@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:fake": "tsx watch test/devServer.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2",

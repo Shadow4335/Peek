@@ -134,6 +134,20 @@ export class FakeStore implements GameStore {
   async listLiveRooms() {
     return [...this.rooms.values()].filter((r) => r.status === "HEAD_START" || r.status === "ACTIVE");
   }
+  async listRecentRooms(limit: number) {
+    return [...this.rooms.values()]
+      .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+      .slice(0, limit)
+      .map((r) => ({ ...r }));
+  }
+  async getPlayersForRooms(roomIds: string[]) {
+    const ids = new Set(roomIds);
+    return [...this.players.values()].filter((p) => ids.has(p.room_id)).map((p) => ({ ...p }));
+  }
+  async removePlayer(playerId: string) {
+    this.players.delete(playerId);
+    this.telemetry.delete(playerId);
+  }
   async getPlayers(roomId: string) {
     return [...this.players.values()].filter((p) => p.room_id === roomId).map((p) => ({ ...p }));
   }

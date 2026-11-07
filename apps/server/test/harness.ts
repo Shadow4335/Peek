@@ -19,13 +19,14 @@ export const FAST: Partial<RuntimeConfig> = {
   random: () => 0.5,
 };
 
-export async function startServer(config: Partial<RuntimeConfig> = FAST) {
+export async function startServer(config: Partial<RuntimeConfig> = FAST, adminPassword = "test-admin-pw") {
   const store = new FakeStore();
   const app: GameApp = createGameApp({
     store,
     log: createLogger("error"),
     corsOrigins: ["*"],
     config,
+    adminPasswordCheck: (pw) => pw === adminPassword,
   });
   await new Promise<void>((r) => app.httpServer.listen(0, r));
   const { port } = app.httpServer.address() as AddressInfo;
